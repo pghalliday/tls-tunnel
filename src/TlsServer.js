@@ -1,14 +1,16 @@
 var tls = require('tls');
 var fs = require('fs');
 
-function Server(port, key, cert) {
+function TlsServer(port, key, cert, ca) {
 	var self = this;
   var cleartextStreams = [];
 
 	var server = tls.createServer({
 		key: key,
 		cert: cert,
-		requestCert: true
+		requestCert: true,
+		rejectUnauthorized: true,
+		ca: ca
 	}, function(cleartextStream) {
     cleartextStreams.push(cleartextStream);
     cleartextStream.on('end', function() {
@@ -29,4 +31,4 @@ function Server(port, key, cert) {
 	};
 }
 
-module.exports = Server;
+module.exports = TlsServer;
