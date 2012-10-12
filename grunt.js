@@ -34,6 +34,8 @@ module.exports = function(grunt) {
     var config = getNodeLintConfig();
     config.globals.describe = false;
     config.globals.it = false;
+    config.globals.before = false;
+    config.globals.after = false;
     return config;
   }
 
