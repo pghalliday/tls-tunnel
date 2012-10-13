@@ -1,32 +1,44 @@
-var tls = require('tls');
-var fs = require('fs');
+var tls = require('tls'),
+    fs = require('fs'),
+    Range = require('./util/Range');
 
-function TlsServer(port, key, cert, ca) {
+function TlsServer(options) {
 	var self = this;
-  var cleartextStreams = [];
+  var connections;
+  var forwardedPorts;
 
 	var server = tls.createServer({
-		key: key,
-		cert: cert,
+		key: options.key,
+		cert: options.cert,
 		requestCert: true,
 		rejectUnauthorized: true,
-		ca: ca
-	}, function(cleartextStream) {
-    cleartextStreams.push(cleartextStream);
-    cleartextStream.on('end', function() {
-      cleartextStreams.splice(cleartextStreams.indexOf(cleartextStream), 1);
+		ca: options.ca
+	}, function(connection) {
+    forwardedPorts.pop(function(error, forwardedPort) {
+      if (error) {
+        connection.write('error: no ports available for forwarding');
+        connection.end();
+      } else {
+        connections.push(connection);
+        connection.write('' + forwardedPort);
+        connection.on('end', function() {
+          connections.splice(connections.indexOf(connection), 1);
+          forwardedPorts.push(forwardedPort);
+        });    
+      }
     });
 	});
 
-	this.start = function(callback) {
-		server.listen(port, callback);
+	self.start = function(callback) {
+    connections = [];
+    forwardedPorts = new Range(options.forwardedPorts.start, options.forwardedPorts.count);
+		server.listen(options.port, callback);
 	};
 
-	this.stop = function(callback) {
-    cleartextStreams.forEach(function(cleartextStream) {
-      cleartextStream.destroy();
+	self.stop = function(callback) {
+    connections.forEach(function(connection) {
+      connection.destroy();
     });
-    cleartextStreams = [];
 		server.close(callback);
 	};
 }
