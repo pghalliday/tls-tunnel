@@ -14,16 +14,23 @@ function Server(options) {
 		rejectUnauthorized: true,
 		ca: options.ca
 	}, function(connection) {
-    forwardedPorts.pop(function(error, forwardedPort) {
-      if (error) {
-        connection.write('error: no ports available for forwarding');
-        connection.end();
-      } else {
-        connections.push(connection);
-        connection.write('' + forwardedPort);
-        connection.on('end', function() {
-          connections.splice(connections.indexOf(connection), 1);
-          forwardedPorts.push(forwardedPort);
+    connections.push(connection);
+    connection.on('end', function() {
+      connections.splice(connections.indexOf(connection), 1);
+    });
+    connection.setEncoding('utf8');
+    connection.once('data', function(data) {
+      if (data === 'open') {
+        forwardedPorts.pop(function(error, forwardedPort) {
+          if (error) {
+            connection.write('error: no ports available for forwarding');
+            connection.end();
+          } else {
+            connection.write('opened: ' + forwardedPort);
+            connection.on('end', function() {
+              forwardedPorts.push(forwardedPort);
+            });
+          }
         });
       }
     });
