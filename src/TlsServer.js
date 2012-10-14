@@ -3,9 +3,9 @@ var tls = require('tls'),
     Range = require('./util/Range');
 
 function TlsServer(options) {
-	var self = this;
-  var connections;
-  var forwardedPorts;
+	var self = this,
+      connections,
+      forwardedPorts;
 
 	var server = tls.createServer({
 		key: options.key,
@@ -24,7 +24,7 @@ function TlsServer(options) {
         connection.on('end', function() {
           connections.splice(connections.indexOf(connection), 1);
           forwardedPorts.push(forwardedPort);
-        });    
+        });
       }
     });
 	});
@@ -37,7 +37,7 @@ function TlsServer(options) {
 
 	self.stop = function(callback) {
     connections.forEach(function(connection) {
-      connection.destroy();
+      connection.end();
     });
 		server.close(callback);
 	};

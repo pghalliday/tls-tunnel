@@ -1,15 +1,17 @@
 var expect = require('chai').expect,
     TlsServer = require('../src/TlsServer'),
     tls = require('tls'),
-    fs = require('fs');
+    fs = require('fs'),
+    net = require('net'),
+    CheckList = require('./testSupport/CheckList');
 
 var PORT = 8080,
-    SERVER_KEY = fs.readFileSync(__dirname + '/keys/server-key.pem'),
-    SERVER_CERT = fs.readFileSync(__dirname + '/keys/server-cert.pem'),
-    CLIENT_KEY = fs.readFileSync(__dirname + '/keys/client-key.pem'),
-    CLIENT_CERT = fs.readFileSync(__dirname + '/keys/client-cert.pem'),
-    UNKNOWN_CLIENT_KEY = fs.readFileSync(__dirname + '/keys/unknown-client-key.pem'),
-    UNKNOWN_CLIENT_CERT = fs.readFileSync(__dirname + '/keys/unknown-client-cert.pem'),
+    SERVER_KEY = fs.readFileSync(__dirname + '/testSupport/keys/server-key.pem'),
+    SERVER_CERT = fs.readFileSync(__dirname + '/testSupport/keys/server-cert.pem'),
+    CLIENT_KEY = fs.readFileSync(__dirname + '/testSupport/keys/client-key.pem'),
+    CLIENT_CERT = fs.readFileSync(__dirname + '/testSupport/keys/client-cert.pem'),
+    UNKNOWN_CLIENT_KEY = fs.readFileSync(__dirname + '/testSupport/keys/unknown-client-key.pem'),
+    UNKNOWN_CLIENT_CERT = fs.readFileSync(__dirname + '/testSupport/keys/unknown-client-cert.pem'),
     START_PORT = 8081,
     PORT_LIMIT = 3;
 
@@ -27,8 +29,15 @@ var SERVER_OPTIONS = {
 describe('TlsServer', function() {
   var server;
 
-  it('should end any open streams and stop when requested', function(done) {
+  before(function() {
     server = new TlsServer(SERVER_OPTIONS);
+  });
+
+  it('should end any open streams and stop when requested', function(done) {
+    var checkList = new CheckList(['stopped', 'closed'], function(error) {
+      expect(error).to.be.an('undefined');
+      done();
+    });
     server.start(function() {
       var stoppedEventsReceived = 0;
       var connection = tls.connect({
@@ -37,21 +46,18 @@ describe('TlsServer', function() {
         cert: CLIENT_CERT,
         ca: [SERVER_CERT]
       }, function() {
-        server.stop(function() {
-          // TODO: I would rather the streams received end events first
-          stoppedEventsReceived++;
+        connection.on('close', function() {
+          checkList.check('closed');
         });
-      });
-      connection.on('end', function() {
-        expect(stoppedEventsReceived).to.equal(1);
-        done();
+        server.stop(function() {
+          checkList.check('stopped');
+        });
       });
     });    
   });
 
   describe('once started', function() {
     before(function(done) {
-      server = new TlsServer(SERVER_OPTIONS);
       server.start(done);
     });
 
@@ -131,7 +137,7 @@ describe('TlsServer', function() {
     it('should reuse forwarded ports when they become available again', function(done) {
       // NB. after the last test the ports available will have been reversed I think
       // because the end events are emitted before the streams are actually stopped
-      // with the server which actualy then happens after the events have been handled.
+      // with the server which actually then happens after the events have been handled.
       // If this seems confusing it's probaby because it is.
       
       var errorCount = 0;
@@ -188,7 +194,7 @@ describe('TlsServer', function() {
             // NB. If this test ever fails then it maybe because of a race condition.
             // as far as I can tell the end event is emmitted before the server has been
             // notified - however it is likely that the server will get the end for connection2
-            // before it gets the connect for connection 5 so maybe it's all good
+            // before it gets the connect for connection5 so maybe it's all good
             expect(data).to.equal('' + (START_PORT + 1), 'connection5');
             var connection6 = tls.connect({
               port: PORT,
@@ -260,8 +266,14 @@ describe('TlsServer', function() {
         });
       });
       
-      it('should pass', function(done) {
-        done();
+      it.skip('should accept unencrypted connections to the forwarded port', function(done) {
+        var client = net.connect({
+          port: forwardedPort
+        }, function() {
+          console.log(arguments);
+          client.on('end', done);
+          client.end();
+        });
       });
       
       after(function(done) {

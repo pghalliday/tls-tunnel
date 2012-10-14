@@ -50,11 +50,19 @@ module.exports = function(grunt) {
       nodeTest: getNodeTestLintConfig()
     },
     mochaTest: {
-      files: ['test/**/*.test.js']
+      test: ['test/**/*.test.js'],
+      doc: ['test/**/*.test.js']
     },
     mochaTestConfig: {
-      options: {
-        reporter: 'nyan'        
+      test: {
+        options: {
+          reporter: 'nyan'        
+        }
+      },
+      doc: {
+        options: {
+          reporter: 'doc'        
+        }
       }
     },
     watch: {
@@ -66,5 +74,8 @@ module.exports = function(grunt) {
   });
 
   // Default task.
-  grunt.registerTask('default', 'lint mochaTest');
+  grunt.registerTask('default', 'lint mochaTest:test');
+
+  // Documentation task.
+  grunt.registerTask('doc', 'mochaTest:doc');
 };
