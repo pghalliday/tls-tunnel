@@ -10,7 +10,7 @@ function Switchboard(port, operator) {
       clients.splice(clients.indexOf(client), 1);
     });
     
-    // pause the client and start piping it to the target before resuming it
+    // pause the client until it has been connected to the target
     client.pause();
     operator.connect(client, function() {
       client.resume();
