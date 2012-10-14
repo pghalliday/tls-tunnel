@@ -1,9 +1,78 @@
 [4mRunning "mochaTest:doc" (mochaTest) task[24m
     <section class="suite">
-      <h1>TlsServer</h1>
+      <h1>Operator</h1>
+      <dl>
+        <section class="suite">
+          <h1>#pipe</h1>
+          <dl>
+            <dt>should request a new secure connection for forwarding from the target</dt>
+            <dd><pre><code>operator.pipe();
+done();</code></pre></dd>
+          </dl>
+        </section>
+      </dl>
+    </section>
+    <section class="suite">
+      <h1>Switchboard</h1>
+      <dl>
+        <dt>should end any open client connections and stop when requested</dt>
+        <dd><pre><code>var checkList = new CheckList(['stopped', 'closed'], function(error) {
+  expect(error).to.be.an('undefined');
+  done();
+});
+
+switchboard.start(function() {
+  var client = net.connect({
+    port: PORT
+  }, function() {
+    client.on('close', function() {
+      checkList.check('closed');
+    });
+    switchboard.stop(function() {
+      checkList.check('stopped');
+    });
+  });
+});</code></pre></dd>
+        <section class="suite">
+          <h1>once started</h1>
+          <dl>
+            <dt>should request a new stream for each client connection, forward all data to and receive data from it</dt>
+            <dd><pre><code>var line = new Line();
+mockOperator.setTarget(line.upstream);
+var client = net.connect({
+  port: PORT
+}, function() {
+  var lineDataEventsReceived = 0,
+      clientDataEventsReceived = 0;
+  line.downstream.on('data', function(data) {
+    lineDataEventsReceived++;
+    expect(data.toString()).to.equal('This is a test', 'line data event');
+    line.downstream.write('This is also a test');
+  });
+  line.downstream.on('end', function() {
+    expect(lineDataEventsReceived).to.equal(1, 'lineDataEventsReceived');
+    expect(clientDataEventsReceived).to.equal(1, 'clientDataEventsReceived');
+    done();
+  });
+  client.on('data', function(data) {
+    clientDataEventsReceived++;
+    expect(data.toString()).to.equal('This is also a test', 'client data event');
+    client.end();
+  });
+  client.write('This is a test');
+});</code></pre></dd>
+          </dl>
+        </section>
+      </dl>
+    </section>
+    <section class="suite">
+      <h1>Server</h1>
       <dl>
         <dt>should end any open streams and stop when requested</dt>
-        <dd><pre><code>server = new TlsServer(SERVER_OPTIONS);
+        <dd><pre><code>var checkList = new CheckList(['stopped', 'closed'], function(error) {
+  expect(error).to.be.an('undefined');
+  done();
+});
 server.start(function() {
   var stoppedEventsReceived = 0;
   var connection = tls.connect({
@@ -12,14 +81,12 @@ server.start(function() {
     cert: CLIENT_CERT,
     ca: [SERVER_CERT]
   }, function() {
-    server.stop(function() {
-      // TODO: I would rather the streams received end events first
-      stoppedEventsReceived++;
+    connection.on('close', function() {
+      checkList.check('closed');
     });
-  });
-  connection.on('end', function() {
-    expect(stoppedEventsReceived).to.equal(1);
-    done();
+    server.stop(function() {
+      checkList.check('stopped');
+    });
   });
 });</code></pre></dd>
         <section class="suite">
@@ -206,8 +273,6 @@ connection.on('error', function(error) {
             <section class="suite">
               <h1>and connected</h1>
               <dl>
-                <dt>should pass</dt>
-                <dd><pre><code>done();</code></pre></dd>
               </dl>
             </section>
           </dl>
@@ -276,6 +341,120 @@ connection.on('error', function(error) {
 });</code></pre></dd>
             <dt>should work without a callback having to be specified</dt>
             <dd><pre><code>range.push(START);</code></pre></dd>
+          </dl>
+        </section>
+      </dl>
+    </section>
+    <section class="suite">
+      <h1>CheckList</h1>
+      <dl>
+        <dt>should callback immediately if there are no items to check off</dt>
+        <dd><pre><code>var checkList = new CheckList([], function(error) {
+  expect(error).to.be.an('undefined');
+  done();
+});</code></pre></dd>
+        <dt>should callback once all the items have been checked off</dt>
+        <dd><pre><code>var checkList = new CheckList(['test', 5, 'hello'], function(error) {
+  expect(error).to.be.an('undefined');
+  done();
+});
+checkList.check(5);
+checkList.check('hello');
+checkList.check('test');</code></pre></dd>
+        <dt>should callback with an error if an item is checked off that we are not waiting for</dt>
+        <dd><pre><code>var checkList = new CheckList(['test', 5, 'hello'], function(error) {
+  expect(error.toString()).to.equal((new Error('Not waiting for item: goodbye')).toString());
+  done();
+});
+checkList.check(5);
+checkList.check('hello');
+checkList.check('goodbye');</code></pre></dd>
+        <dt>should callback with an error if an item is checked off twice</dt>
+        <dd><pre><code>var checkList = new CheckList(['test', 5, 'hello'], function(error) {
+  expect(error.toString()).to.equal((new Error('Not waiting for item: hello')).toString());
+  done();
+});
+checkList.check(5);
+checkList.check('hello');
+checkList.check('hello');</code></pre></dd>
+        <dt>should not callback again after error</dt>
+        <dd><pre><code>var callbackCount = 0;
+var checkList = new CheckList(['test', 5, 'hello'], function(error) {
+  expect(error.toString()).to.equal((new Error('Not waiting for item: hello')).toString());
+  callbackCount++;
+});
+checkList.check(5);
+checkList.check('hello');
+checkList.check('hello');
+checkList.check('hello');
+checkList.check('test');
+expect(callbackCount).to.equal(1);</code></pre></dd>
+        <dt>should throw an error if checked again after completion</dt>
+        <dd><pre><code>var callbackCount = 0;
+var checkList = new CheckList(['test', 5, 'hello'], function(error) {
+  expect(error).to.be.an('undefined');
+  callbackCount++;
+});
+checkList.check(5);
+checkList.check('hello');
+checkList.check('test');
+expect(callbackCount).to.equal(1, 'callbackCount');
+
+var errorCount = 0;
+try {
+  checkList.check('hello');
+} catch(error) {
+  expect(error.toString()).to.equal((new Error('Not waiting for item as already reported completion: hello')).toString());
+  errorCount++;
+}
+expect(errorCount).to.equal(1, 'errorCount');</code></pre></dd>
+      </dl>
+    </section>
+    <section class="suite">
+      <h1>Line</h1>
+      <dl>
+        <section class="suite">
+          <h1>constructor</h1>
+          <dl>
+            <dt>should construct with no arguments</dt>
+            <dd><pre><code>var line = new Line();</code></pre></dd>
+          </dl>
+        </section>
+        <section class="suite">
+          <h1>downstream and upstream fields</h1>
+          <dl>
+            <dt>should be bot writable and readable</dt>
+            <dd><pre><code>expect(line.upstream.readable).to.equal(true);
+expect(line.downstream.readable).to.equal(true);
+expect(line.upstream.writable).to.equal(true);
+expect(line.downstream.writable).to.equal(true);</code></pre></dd>
+            <dt>should cause the other end of the line to emit data and end events on calls to write and end</dt>
+            <dd><pre><code>var checkList = new CheckList(['hello, downstream', 'hello, upstream', 'goodbye, downstream', 'goodbye, upstream'], function(error) {
+  expect(error).to.be.an('undefined');
+  done();
+});
+line.downstream.once('data', function(data) {
+  checkList.check('hello, downstream');
+  line.downstream.write('hello, upstream');
+  line.downstream.on('data', function(data) {
+    checkList.check('goodbye, downstream');
+  });
+});
+line.downstream.on('end', function(data) {
+  checkList.check('goodbye, downstream');
+  line.downstream.end('goodbye, upstream');
+});
+line.upstream.once('data', function(data) {
+  checkList.check('hello, upstream');
+  line.upstream.end('goodbye, downstream');
+  line.upstream.on('data', function(data) {
+    checkList.check('goodbye, upstream');
+  });
+});
+line.upstream.on('end', function(data) {
+  checkList.check('goodbye, upstream');
+});
+line.upstream.write('hello, downstream');</code></pre></dd>
           </dl>
         </section>
       </dl>

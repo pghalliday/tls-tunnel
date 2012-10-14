@@ -1,6 +1,6 @@
 var net = require('net');
 
-function Forward(port, target) {
+function Switchboard(port, operator) {
   var self = this,
       clients;
   
@@ -12,7 +12,7 @@ function Forward(port, target) {
     
     // pause the client and start piping it to the target before resuming it
     client.pause();
-    target.pipe(client, function() {
+    operator.connect(client, function() {
       client.resume();
     });
   });
@@ -30,4 +30,4 @@ function Forward(port, target) {
   };
 }
 
-module.exports = Forward;
+module.exports = Switchboard;

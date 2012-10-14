@@ -2,7 +2,7 @@ var tls = require('tls'),
     fs = require('fs'),
     Range = require('./util/Range');
 
-function TlsServer(options) {
+function Server(options) {
 	var self = this,
       connections,
       forwardedPorts;
@@ -43,4 +43,4 @@ function TlsServer(options) {
 	};
 }
 
-module.exports = TlsServer;
+module.exports = Server;

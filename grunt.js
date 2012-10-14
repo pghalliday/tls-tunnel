@@ -50,8 +50,8 @@ module.exports = function(grunt) {
       nodeTest: getNodeTestLintConfig()
     },
     mochaTest: {
-      test: ['test/**/*.test.js'],
-      doc: ['test/**/*.test.js']
+      test: ['test/**/*.js'],
+      doc: ['test/**/*.js']
     },
     mochaTestConfig: {
       test: {
@@ -67,7 +67,7 @@ module.exports = function(grunt) {
     },
     watch: {
       scripts: {
-        files: ['<config.lint:node>'],
+        files: ['grunt.js', 'src/**/*.js', 'test/**/*.js'],
         tasks: 'default'
       }
     }

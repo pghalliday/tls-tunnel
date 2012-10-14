@@ -1,17 +1,17 @@
 var expect = require('chai').expect,
-    TlsServer = require('../src/TlsServer'),
+    Server = require('../src/Server'),
     tls = require('tls'),
     fs = require('fs'),
     net = require('net'),
-    CheckList = require('./testSupport/CheckList');
+    CheckList = require('../src/util/test/CheckList');
 
 var PORT = 8080,
-    SERVER_KEY = fs.readFileSync(__dirname + '/testSupport/keys/server-key.pem'),
-    SERVER_CERT = fs.readFileSync(__dirname + '/testSupport/keys/server-cert.pem'),
-    CLIENT_KEY = fs.readFileSync(__dirname + '/testSupport/keys/client-key.pem'),
-    CLIENT_CERT = fs.readFileSync(__dirname + '/testSupport/keys/client-cert.pem'),
-    UNKNOWN_CLIENT_KEY = fs.readFileSync(__dirname + '/testSupport/keys/unknown-client-key.pem'),
-    UNKNOWN_CLIENT_CERT = fs.readFileSync(__dirname + '/testSupport/keys/unknown-client-cert.pem'),
+    SERVER_KEY = fs.readFileSync('./keys/server-key.pem'),
+    SERVER_CERT = fs.readFileSync('./keys/server-cert.pem'),
+    CLIENT_KEY = fs.readFileSync('./keys/client-key.pem'),
+    CLIENT_CERT = fs.readFileSync('./keys/client-cert.pem'),
+    UNKNOWN_CLIENT_KEY = fs.readFileSync('./keys/unknown-client-key.pem'),
+    UNKNOWN_CLIENT_CERT = fs.readFileSync('./keys/unknown-client-cert.pem'),
     START_PORT = 8081,
     PORT_LIMIT = 3;
 
@@ -26,11 +26,11 @@ var SERVER_OPTIONS = {
   }
 };
 
-describe('TlsServer', function() {
+describe('Server', function() {
   var server;
 
   before(function() {
-    server = new TlsServer(SERVER_OPTIONS);
+    server = new Server(SERVER_OPTIONS);
   });
 
   it('should end any open streams and stop when requested', function(done) {

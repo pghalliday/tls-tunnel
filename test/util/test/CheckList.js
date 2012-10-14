@@ -1,5 +1,5 @@
 var expect = require('chai').expect,
-    CheckList = require('./CheckList');
+    CheckList = require('../../../src/util/test/CheckList');
 
 describe('CheckList', function() {
   it('should callback immediately if there are no items to check off', function(done) {
