@@ -131,7 +131,9 @@ describe('Operator', function() {
       },
       stopServer: function(server, callback) {
         expect(server).to.equal(mockServer);
-        callback();
+        if (callback) {
+          callback();
+        }
         done();
       }
     };
@@ -157,7 +159,9 @@ describe('Operator', function() {
       },
       stopServer: function(server, callback) {
         checkList.check(server);
-        callback();
+        if (callback) {
+          callback();
+        }
       }
     };
     var operator = new Operator(mockSecureServer, mockSwitchboard);

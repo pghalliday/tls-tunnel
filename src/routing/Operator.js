@@ -17,14 +17,9 @@ function Operator(secureServer, switchboard, timeout) {
           if (error) {
             secureConnection.end('open:error:' + error.message);
           } else {
-            secureConnection.upstreamServer = server;
             secureConnection.on('end', function() {
-              // only stop the upstream server if it wasn't already stopped
-              if (secureConnection.upstreamServer) {
-                switchboard.stopServer(secureConnection.upstreamServer, function() {
-                  secureConnection.upstreamServer = null;
-                });
-              }
+              // TODO: really, nothing to do when the server is stopped?
+              switchboard.stopServer(server);
             });
             secureConnection.write('open:success:' + server.getConnectionString());
             server.on('connection', function(connection) {
@@ -66,26 +61,15 @@ function Operator(secureServer, switchboard, timeout) {
     var count = secureConnections.length;
     if (count === 0) {
       callback();
-    } else {
-      secureConnections.forEach(function(secureConnection) {
-        if (secureConnection.upstreamServer) {
-          switchboard.stopServer(secureConnection.upstreamServer, function() {
-            secureConnection.upstreamServer = null;
-            secureConnection.end();
-            count--;
-            if (count === 0) {
-              callback();
-            }
-          });
-        } else {
-          secureConnection.end();
-          count--;
-          if (count === 0) {
-            callback();
-          }
-        }
-      });
     }
+    var connections = secureConnections.slice(0);
+    connections.forEach(function(secureConnection) {
+      secureConnection.end();
+      count--;
+      if (count === 0) {
+        callback();
+      }
+    });
   };
 }
 

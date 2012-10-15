@@ -49,7 +49,8 @@ function DuplexPipe() {
       if (data) {
         otherEnd.emitOrBuffer('data', data);      
       }
-      otherEnd.emitOrBuffer('end', data);
+      otherEnd.emitOrBuffer('end');
+      self.emitOrBuffer('end');
     };
     
     self.setEncoding = function(encoding) {

@@ -36,13 +36,16 @@ function Switchboard(portRange) {
   self.stopServer = function(server, callback) {
     serversAndConnections.forEach(function(serverAndConnections) {
       if (serverAndConnections.server === server) {
-        serverAndConnections.connections.forEach(function(connection) {
+        var connections = serverAndConnections.connections.slice(0);
+        connections.forEach(function(connection) {
           connection.end();
         });
         serversAndConnections.splice(serversAndConnections.indexOf(serverAndConnections), 1);
         serverAndConnections.server.close(function() {
           portRange.push(serverAndConnections.port);
-          callback();
+          if (callback) {
+            callback();
+          }
         });
       }
     });
