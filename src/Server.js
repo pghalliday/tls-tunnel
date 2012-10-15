@@ -1,52 +1,32 @@
 var tls = require('tls'),
-    fs = require('fs'),
-    Range = require('./util/Range');
+    Range = require('./util/Range'),
+    Switchboard = require('./routing/Switchboard'),
+    Operator = require('./routing/Operator');
 
 function Server(options) {
 	var self = this,
       connections,
       forwardedPorts;
 
-	var server = tls.createServer({
+	var secureServer = tls.createServer({
 		key: options.key,
 		cert: options.cert,
 		requestCert: true,
 		rejectUnauthorized: true,
 		ca: options.ca
-	}, function(connection) {
-    connections.push(connection);
-    connection.on('end', function() {
-      connections.splice(connections.indexOf(connection), 1);
-    });
-    connection.setEncoding('utf8');
-    connection.once('data', function(data) {
-      if (data === 'open') {
-        forwardedPorts.pop(function(error, forwardedPort) {
-          if (error) {
-            connection.write('error: no ports available for forwarding');
-            connection.end();
-          } else {
-            connection.write('opened: ' + forwardedPort);
-            connection.on('end', function() {
-              forwardedPorts.push(forwardedPort);
-            });
-          }
-        });
-      }
-    });
 	});
 
+  var switchboard = new Switchboard(new Range(options.forwardedPorts.start, options.forwardedPorts.count));
+  var operator = new Operator(secureServer, switchboard, options.timeout);
+
 	self.start = function(callback) {
-    connections = [];
-    forwardedPorts = new Range(options.forwardedPorts.start, options.forwardedPorts.count);
-		server.listen(options.port, callback);
+		secureServer.listen(options.port, callback);
 	};
 
 	self.stop = function(callback) {
-    connections.forEach(function(connection) {
-      connection.end();
+    operator.cleanUp(function() {
+      secureServer.close(callback);
     });
-		server.close(callback);
 	};
 }
 

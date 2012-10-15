@@ -2,67 +2,287 @@
     <section class="suite">
       <h1>Operator</h1>
       <dl>
-        <section class="suite">
-          <h1>#pipe</h1>
-          <dl>
-            <dt>should request a new secure connection for forwarding from the target</dt>
-            <dd><pre><code>operator.pipe();
-done();</code></pre></dd>
-          </dl>
-        </section>
+        <dt>should respond to open requests with the success responses from the switchboard</dt>
+        <dd><pre><code>var mockSecureServer = new EventEmitter();
+var mockServer = new EventEmitter();
+mockServer.getConnectionString = function() {
+  return 'ConnectionString';
+};
+var mockSwitchboard = {
+  startServer: function(callback) {
+    callback(null, mockServer);
+  }
+};
+var operator = new Operator(mockSecureServer, mockSwitchboard);
+var duplexPipe = new DuplexPipe();
+duplexPipe.downstream.on('data', function(data) {
+  expect(data).to.equal('open:success:ConnectionString');
+  done();
+});
+mockSecureServer.emit('secureConnection', duplexPipe.upstream);
+duplexPipe.downstream.write('open');</code></pre></dd>
+        <dt>should respond to open requests with the error responses from the switchboard and end the connection immediately</dt>
+        <dd><pre><code>var mockSecureServer = new EventEmitter();
+var mockSwitchboard = {
+  startServer: function(callback) {
+    callback(new Error('Something went wrong'));
+  }
+};
+var operator = new Operator(mockSecureServer, mockSwitchboard);
+var duplexPipe = new DuplexPipe();
+var checkList = new CheckList(['end', 'data'], done);
+duplexPipe.downstream.on('data', function(data) {
+  expect(data).to.equal('open:error:Something went wrong');
+  checkList.check('data');
+});
+duplexPipe.downstream.on('end', function() {
+  checkList.check('end');
+});
+mockSecureServer.emit('secureConnection', duplexPipe.upstream);
+duplexPipe.downstream.write('open');</code></pre></dd>
+        <dt>should request downstream connections to match incoming connections from upstream servers</dt>
+        <dd><pre><code>var mockSecureServer = new EventEmitter();
+var mockServer = new EventEmitter();
+mockServer.getConnectionString = function() {
+  return 'ConnectionString';
+};
+var mockSwitchboard = {
+  startServer: function(callback) {
+    callback(null, mockServer);
+  }
+};
+var operator = new Operator(mockSecureServer, mockSwitchboard);
+var downstreamControlDuplexPipe = new DuplexPipe();
+var downstreamDuplexPipe = new DuplexPipe();
+var upstreamDuplexPipe = new DuplexPipe();
+var checkList = new CheckList(['open', 'connect', 'data'], done);
+downstreamControlDuplexPipe.downstream.once('data', function(data) {
+  expect(data).to.equal('open:success:ConnectionString');
+  checkList.check('open');
+  downstreamControlDuplexPipe.downstream.on('data', function(data) {
+    expect(data).to.match(/^connect:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/, 'connect string shouold containa valid UUID v1');
+    checkList.check('connect');
+    mockSecureServer.emit('secureConnection', downstreamDuplexPipe.upstream);
+    downstreamDuplexPipe.downstream.on('data', function(data) {
+      expect(data).to.equal('This is a test');
+      checkList.check('data');
+    });
+    downstreamDuplexPipe.downstream.write(data);
+  });
+});
+mockSecureServer.emit('secureConnection', downstreamControlDuplexPipe.upstream);
+downstreamControlDuplexPipe.downstream.write('open');
+upstreamDuplexPipe.upstream.on('end', function() {
+  checkList.check('end');
+});
+mockServer.emit('connection', upstreamDuplexPipe.downstream);
+upstreamDuplexPipe.upstream.write('This is a test');</code></pre></dd>
+        <dt>should timeout after the configured period when requesting downstream connections</dt>
+        <dd><pre><code>var mockSecureServer = new EventEmitter();
+var mockServer = new EventEmitter();
+mockServer.getConnectionString = function() {
+  return 'ConnectionString';
+};
+var mockSwitchboard = {
+  startServer: function(callback) {
+    callback(null, mockServer);
+  }
+};
+var operator = new Operator(mockSecureServer, mockSwitchboard, 100);
+var downstreamControlDuplexPipe = new DuplexPipe();
+var downstreamDuplexPipe = new DuplexPipe();
+var upstreamDuplexPipe = new DuplexPipe();
+var checkList = new CheckList(['open', 'connect', 'end'], done);
+downstreamControlDuplexPipe.downstream.once('data', function(data) {
+  expect(data).to.equal('open:success:ConnectionString');
+  checkList.check('open');
+  downstreamControlDuplexPipe.downstream.on('data', function(data) {
+    expect(data).to.match(/^connect:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/, 'connect string shouold containa valid UUID v1');
+    checkList.check('connect');
+  });
+});
+mockSecureServer.emit('secureConnection', downstreamControlDuplexPipe.upstream);
+downstreamControlDuplexPipe.downstream.write('open');
+upstreamDuplexPipe.upstream.on('end', function() {
+  checkList.check('end');
+});
+mockServer.emit('connection', upstreamDuplexPipe.downstream);
+upstreamDuplexPipe.upstream.write('This is a test');</code></pre></dd>
+        <dt>should stop upstream servers when the downstream control sockets are disconnected</dt>
+        <dd><pre><code>var mockSecureServer = new EventEmitter();
+var mockServer = new EventEmitter();
+mockServer.getConnectionString = function() {
+  return 'ConnectionString';
+};
+var mockSwitchboard = {
+  startServer: function(callback) {
+    callback(null, mockServer);
+  },
+  stopServer: function(server, callback) {
+    expect(server).to.equal(mockServer);
+    callback();
+    done();
+  }
+};
+var operator = new Operator(mockSecureServer, mockSwitchboard);
+var duplexPipe = new DuplexPipe();
+duplexPipe.downstream.on('data', function(data) {
+  expect(data).to.equal('open:success:ConnectionString');
+  duplexPipe.downstream.end();
+});
+mockSecureServer.emit('secureConnection', duplexPipe.upstream);
+duplexPipe.downstream.write('open');</code></pre></dd>
+        <dt>should keep track of all downstream connections and upstream servers and end/close them when cleaned up</dt>
+        <dd><pre><code>var mockSecureServer = new EventEmitter();
+var mockServer = new EventEmitter();
+mockServer.getConnectionString = function() {
+  return 'ConnectionString';
+};
+var mockSwitchboard = {
+  startServer: function(callback) {
+    callback(null, mockServer);
+  },
+  stopServer: function(server, callback) {
+    checkList.check(server);
+    callback();
+  }
+};
+var operator = new Operator(mockSecureServer, mockSwitchboard);
+var duplexPipe1 = new DuplexPipe();
+var duplexPipe2 = new DuplexPipe();
+var duplexPipe3 = new DuplexPipe();
+
+var checkList = new CheckList([
+  duplexPipe1,
+  duplexPipe2, 
+  duplexPipe3, 
+  mockServer, 
+  mockServer, 
+  mockServer, 
+  operator
+], done);
+
+duplexPipe1.downstream.on('end', function() {
+  checkList.check(duplexPipe1);
+});
+duplexPipe2.downstream.on('end', function() {
+  checkList.check(duplexPipe2);
+});
+duplexPipe3.downstream.on('end', function() {
+  checkList.check(duplexPipe3);
+});
+mockSecureServer.emit('secureConnection', duplexPipe1.upstream);
+mockSecureServer.emit('secureConnection', duplexPipe2.upstream);
+mockSecureServer.emit('secureConnection', duplexPipe3.upstream);
+duplexPipe1.downstream.write('open');
+duplexPipe2.downstream.write('open');
+duplexPipe3.downstream.write('open');
+
+operator.cleanUp(function() {
+  checkList.check(operator);
+});</code></pre></dd>
       </dl>
     </section>
     <section class="suite">
       <h1>Switchboard</h1>
       <dl>
-        <dt>should end any open client connections and stop when requested</dt>
-        <dd><pre><code>var checkList = new CheckList(['stopped', 'closed'], function(error) {
+        <dt>should start servers listening on ports in the given range until no more ports remain</dt>
+        <dd><pre><code>var switchboard = new Switchboard(new Range(START_PORT, PORT_COUNT));
+var servers = [];
+
+var checklist = new Checklist([
+  (new Error('No more ports available')).toString(),
+  'connection:8081',
+  'connect:8081',
+  'connection:8082',
+  'connect:8082',
+  'connection:8083',
+  'connect:8083'
+], function(error) {
   expect(error).to.be.an('undefined');
-  done();
+  var count = servers.length;
+  servers.forEach(function(server) {
+    switchboard.stopServer(server, function() {
+      count--;
+      if (count === 0) {
+        done();
+      }
+    });
+  });
 });
 
-switchboard.start(function() {
-  var client = net.connect({
-    port: PORT
+switchboard.startServer(function(error, server) {
+  expect(error).to.equal(null);
+  expect(server.getConnectionString()).to.equal('8081');
+  servers.push(server);
+  server.on('connection', function(connection) {
+    checklist.check('connection:8081');
+  });
+  net.connect({
+    port: 8081
   }, function() {
-    client.on('close', function() {
-      checkList.check('closed');
-    });
-    switchboard.stop(function() {
-      checkList.check('stopped');
+    checklist.check('connect:8081');
+  });
+});
+
+switchboard.startServer(function(error, server) {
+  expect(error).to.equal(null);
+  expect(server.getConnectionString()).to.equal('8082');
+  servers.push(server);
+  server.on('connection', function(connection) {
+    checklist.check('connection:8082');
+  });
+  net.connect({
+    port: 8082
+  }, function() {
+    checklist.check('connect:8082');
+  });
+});
+
+switchboard.startServer(function(error, server) {
+  expect(error).to.equal(null);
+  expect(server.getConnectionString()).to.equal('8083');
+  servers.push(server);
+  server.on('connection', function(connection) {
+    checklist.check('connection:8083');
+  });
+  net.connect({
+    port: 8083
+  }, function() {
+    checklist.check('connect:8083');
+  });
+});
+
+switchboard.startServer(function(error, server) {
+  checklist.check(error.toString());
+});</code></pre></dd>
+        <dt>should reuse ports after servers are stopped</dt>
+        <dd><pre><code>var switchboard = new Switchboard(new Range(START_PORT, PORT_COUNT));
+switchboard.startServer(function(error, server1) {
+  expect(error).to.equal(null);
+  expect(server1.getConnectionString()).to.equal('8081');
+  switchboard.stopServer(server1, function() {
+    switchboard.startServer(function(error, server2) {
+      expect(error).to.equal(null);
+      expect(server2.getConnectionString()).to.equal('8081');
+      switchboard.stopServer(server2, function() {
+        done();
+      });
     });
   });
 });</code></pre></dd>
-        <section class="suite">
-          <h1>once started</h1>
-          <dl>
-            <dt>should request a new stream for each client connection, forward all data to and receive data from it</dt>
-            <dd><pre><code>var line = new Line();
-mockOperator.setTarget(line.upstream);
-var client = net.connect({
-  port: PORT
-}, function() {
-  var lineDataEventsReceived = 0,
-      clientDataEventsReceived = 0;
-  line.downstream.on('data', function(data) {
-    lineDataEventsReceived++;
-    expect(data.toString()).to.equal('This is a test', 'line data event');
-    line.downstream.write('This is also a test');
+        <dt>should be possible to start and stop a server independently</dt>
+        <dd><pre><code>var switchboard = new Switchboard(new Range(START_PORT, PORT_COUNT));
+switchboard.startServer(function(error, server) {
+  expect(error).to.equal(null);
+  net.connect({
+    port: 8081
+  }, function() {
+    switchboard.stopServer(server, function() {
+      done();
+    });
   });
-  line.downstream.on('end', function() {
-    expect(lineDataEventsReceived).to.equal(1, 'lineDataEventsReceived');
-    expect(clientDataEventsReceived).to.equal(1, 'clientDataEventsReceived');
-    done();
-  });
-  client.on('data', function(data) {
-    clientDataEventsReceived++;
-    expect(data.toString()).to.equal('This is also a test', 'client data event');
-    client.end();
-  });
-  client.write('This is a test');
 });</code></pre></dd>
-          </dl>
-        </section>
       </dl>
     </section>
     <section class="suite">
@@ -98,16 +318,18 @@ var connection = tls.connect({
   port: PORT,
   key: CLIENT_KEY,
   cert: CLIENT_CERT
-});
-connection.setEncoding('utf8');
-connection.on('data', function(data) {
-  dataEventCount++;
-  expect(data).to.equal('' + START_PORT);
-  connection.end();
-});
-connection.on('end', function() {
-  expect(dataEventCount).to.equal(1);
-  done();
+}, function() {
+  connection.write('open');
+  connection.setEncoding('utf8');
+  connection.on('data', function(data) {
+    dataEventCount++;
+    expect(data).to.equal('open:success:' + START_PORT);
+    connection.end();
+  });
+  connection.on('end', function() {
+    expect(dataEventCount).to.equal(1);
+    done();
+  });
 });</code></pre></dd>
             <dt>should accept multiple connections but immediately end connections if no more ports are available for forwarding</dt>
             <dd><pre><code>var errorCount = 0;
@@ -115,136 +337,59 @@ var connection1 = tls.connect({
   port: PORT,
   key: CLIENT_KEY,
   cert: CLIENT_CERT
-});
-connection1.setEncoding('utf8');
-connection1.on('data', function(data) {
-  expect(data).to.equal('' + START_PORT, 'connection1');
-  var connection2 = tls.connect({
-    port: PORT,
-    key: CLIENT_KEY,
-    cert: CLIENT_CERT
-  });
-  connection2.setEncoding('utf8');
-  connection2.on('data', function(data) {
-    expect(data).to.equal('' + (START_PORT + 1), 'connection2');
-    var connection3 = tls.connect({
+}, function() {
+  connection1.write('open');
+  connection1.setEncoding('utf8');
+  connection1.on('data', function(data) {
+    expect(data).to.equal('open:success:' + START_PORT, 'connection1');
+    var connection2 = tls.connect({
       port: PORT,
       key: CLIENT_KEY,
       cert: CLIENT_CERT
-    });
-    connection3.setEncoding('utf8');
-    connection3.on('data', function(data) {
-      expect(data).to.equal('' + (START_PORT + 2), 'connection3');
-      var connection4 = tls.connect({
-        port: PORT,
-        key: CLIENT_KEY,
-        cert: CLIENT_CERT
+    }, function() {
+      connection2.write('open');
+      connection2.setEncoding('utf8');
+      connection2.on('data', function(data) {
+        expect(data).to.equal('open:success:' + (START_PORT + 1), 'connection2');
+        var connection3 = tls.connect({
+          port: PORT,
+          key: CLIENT_KEY,
+          cert: CLIENT_CERT
+        }, function() {
+          connection3.write('open');
+          connection3.setEncoding('utf8');
+          connection3.on('data', function(data) {
+            expect(data).to.equal('open:success:' + (START_PORT + 2), 'connection3');
+            var connection4 = tls.connect({
+              port: PORT,
+              key: CLIENT_KEY,
+              cert: CLIENT_CERT
+            }, function() {
+              connection4.write('open');
+              connection4.setEncoding('utf8');
+              connection4.on('data', function(data) {
+                errorCount++;
+                expect(data).to.equal('open:error:No more ports available');
+              });
+              connection4.on('end', function() {
+                connection3.end();
+              });
+            });
+            connection3.on('end', function() {
+              connection2.end();
+            });
+          });
+          connection2.on('end', function() {
+            connection1.end();
+          });
+        });
+        connection1.on('end', function() {
+          expect(errorCount).to.equal(1);
+          done();
+        });
       });
-      connection4.setEncoding('utf8');
-      connection4.on('data', function(data) {
-        errorCount++;
-        expect(data).to.equal('error: no ports available for forwarding');
-      });
-      connection4.on('end', function() {
-        connection3.end();
-      });
-    });
-    connection3.on('end', function() {
-      connection2.end();
     });
   });
-  connection2.on('end', function() {
-    connection1.end();
-  });
-});
-connection1.on('end', function() {
-  expect(errorCount).to.equal(1);
-  done();
-});</code></pre></dd>
-            <dt>should reuse forwarded ports when they become available again</dt>
-            <dd><pre><code>// NB. after the last test the ports available will have been reversed I think
-// because the end events are emitted before the streams are actually stopped
-// with the server which actually then happens after the events have been handled.
-// If this seems confusing it's probaby because it is.
-
-var errorCount = 0;
-var connection1 = tls.connect({
-  port: PORT,
-  key: CLIENT_KEY,
-  cert: CLIENT_CERT
-});
-connection1.setEncoding('utf8');
-connection1.on('data', function(data) {
-  expect(data).to.equal('' + (START_PORT + 2), 'connection1');
-  var connection2 = tls.connect({
-    port: PORT,
-    key: CLIENT_KEY,
-    cert: CLIENT_CERT
-  });
-  connection2.setEncoding('utf8');
-  connection2.on('data', function(data) {
-    expect(data).to.equal('' + (START_PORT + 1), 'connection2');
-    var connection3 = tls.connect({
-      port: PORT,
-      key: CLIENT_KEY,
-      cert: CLIENT_CERT
-    });
-    connection3.setEncoding('utf8');
-    connection3.on('data', function(data) {
-      expect(data).to.equal('' + START_PORT, 'connection3');
-      var connection4 = tls.connect({
-        port: PORT,
-        key: CLIENT_KEY,
-        cert: CLIENT_CERT
-      });
-      connection4.setEncoding('utf8');
-      connection4.on('data', function(data) {
-        errorCount++;
-        expect(data).to.equal('error: no ports available for forwarding', 'connection4');
-      });
-      connection4.on('end', function() {
-        connection2.end();
-      });
-    });
-    connection3.on('end', function() {
-      connection2.end();
-    });
-  });
-  connection2.on('end', function() {
-    var connection5 = tls.connect({
-      port: PORT,
-      key: CLIENT_KEY,
-      cert: CLIENT_CERT
-    });
-    connection5.setEncoding('utf8');
-    connection5.on('data', function(data) {
-      // NB. If this test ever fails then it maybe because of a race condition.
-      // as far as I can tell the end event is emmitted before the server has been
-      // notified - however it is likely that the server will get the end for connection2
-      // before it gets the connect for connection5 so maybe it's all good
-      expect(data).to.equal('' + (START_PORT + 1), 'connection5');
-      var connection6 = tls.connect({
-        port: PORT,
-        key: CLIENT_KEY,
-        cert: CLIENT_CERT
-      });
-      connection6.setEncoding('utf8');
-      connection6.on('data', function(data) {
-        errorCount++;
-        expect(data).to.equal('error: no ports available for forwarding', 'connection6');
-      });
-      connection6.on('end', function() {
-        connection5.end();
-      });
-    });
-    connection5.on('end', function() {
-      connection1.end();
-    });
-  });
-});
-connection1.on('end', function() {
-  expect(errorCount).to.equal(2);
-  done();
 });</code></pre></dd>
             <dt>should reject connections with unknown certificates</dt>
             <dd><pre><code>var secureConnectEventCount = 0;
@@ -273,6 +418,32 @@ connection.on('error', function(error) {
             <section class="suite">
               <h1>and connected</h1>
               <dl>
+                <dt>should accept unencrypted connections to the forwarded port and send data to the target</dt>
+                <dd><pre><code>var dataConnection;
+var client = net.connect({
+  port: forwardedPort
+}, function() {
+  connection.on('data', function(data) {
+    var dataConnection = tls.connect({
+      port: PORT,
+      key: CLIENT_KEY,
+      cert: CLIENT_CERT
+    }, function() {
+      var allData = '';
+      dataConnection.setEncoding('utf8');
+      dataConnection.on('data', function(data) {
+        allData += data;
+      });
+      dataConnection.on('end', function() {
+        expect(allData).to.equal('This is a testThis is also a test');
+        done();
+      });
+      dataConnection.write(data);
+    });
+  });
+  client.write('This is a test');
+  client.end('This is also a test');
+});</code></pre></dd>
               </dl>
             </section>
           </dl>
@@ -377,6 +548,19 @@ checkList.check('goodbye');</code></pre></dd>
 checkList.check(5);
 checkList.check('hello');
 checkList.check('hello');</code></pre></dd>
+        <dt>should callback with an error if an item is checked off out of order and ordered has been set to true</dt>
+        <dd><pre><code>var checkList = new CheckList([
+  'test', 
+  5, 
+  'hello'], {
+    ordered: true
+  }, function(error) {
+  expect(error.toString()).to.equal((new Error('Not waiting for item: hello')).toString());
+  done();
+});
+checkList.check('test');
+checkList.check('hello');
+checkList.check(5);</code></pre></dd>
         <dt>should not callback again after error</dt>
         <dd><pre><code>var callbackCount = 0;
 var checkList = new CheckList(['test', 5, 'hello'], function(error) {
@@ -411,52 +595,69 @@ expect(errorCount).to.equal(1, 'errorCount');</code></pre></dd>
       </dl>
     </section>
     <section class="suite">
-      <h1>Line</h1>
+      <h1>DuplexPipe</h1>
       <dl>
-        <section class="suite">
-          <h1>constructor</h1>
-          <dl>
-            <dt>should construct with no arguments</dt>
-            <dd><pre><code>var line = new Line();</code></pre></dd>
-          </dl>
-        </section>
-        <section class="suite">
-          <h1>downstream and upstream fields</h1>
-          <dl>
-            <dt>should be bot writable and readable</dt>
-            <dd><pre><code>expect(line.upstream.readable).to.equal(true);
-expect(line.downstream.readable).to.equal(true);
-expect(line.upstream.writable).to.equal(true);
-expect(line.downstream.writable).to.equal(true);</code></pre></dd>
-            <dt>should cause the other end of the line to emit data and end events on calls to write and end</dt>
-            <dd><pre><code>var checkList = new CheckList(['hello, downstream', 'hello, upstream', 'goodbye, downstream', 'goodbye, upstream'], function(error) {
-  expect(error).to.be.an('undefined');
-  done();
-});
-line.downstream.once('data', function(data) {
-  checkList.check('hello, downstream');
-  line.downstream.write('hello, upstream');
-  line.downstream.on('data', function(data) {
-    checkList.check('goodbye, downstream');
+        <dt>should construct with no arguments</dt>
+        <dd><pre><code>var duplexPipe = new DuplexPipe();</code></pre></dd>
+        <dt>should be both writable and readable</dt>
+        <dd><pre><code>var duplexPipe = new DuplexPipe();
+expect(duplexPipe.upstream.readable).to.equal(true);
+expect(duplexPipe.downstream.readable).to.equal(true);
+expect(duplexPipe.upstream.writable).to.equal(true);
+expect(duplexPipe.downstream.writable).to.equal(true);</code></pre></dd>
+        <dt>should cause the other end of the DuplexPipe to emit data and end events on calls to write and end</dt>
+        <dd><pre><code>var duplexPipe = new DuplexPipe();
+var checkList = new CheckList(['hello, downstream', 'hello, upstream', 'goodbye, downstream', 'goodbye, upstream', 'end upstream', 'end downstream'], done);
+duplexPipe.downstream.once('data', function(data) {
+  checkList.check(data);
+  duplexPipe.downstream.on('data', function(data) {
+    checkList.check(data);
   });
+  duplexPipe.downstream.write('hello, upstream');
 });
-line.downstream.on('end', function(data) {
-  checkList.check('goodbye, downstream');
-  line.downstream.end('goodbye, upstream');
+duplexPipe.downstream.on('end', function(data) {
+  checkList.check('end downstream');
+  duplexPipe.downstream.end('goodbye, upstream');
 });
-line.upstream.once('data', function(data) {
-  checkList.check('hello, upstream');
-  line.upstream.end('goodbye, downstream');
-  line.upstream.on('data', function(data) {
-    checkList.check('goodbye, upstream');
+duplexPipe.upstream.once('data', function(data) {
+  checkList.check(data);
+  duplexPipe.upstream.on('data', function(data) {
+    checkList.check(data);
   });
+  duplexPipe.upstream.end('goodbye, downstream');
 });
-line.upstream.on('end', function(data) {
-  checkList.check('goodbye, upstream');
+duplexPipe.upstream.on('end', function(data) {
+  checkList.check('end upstream');
 });
-line.upstream.write('hello, downstream');</code></pre></dd>
-          </dl>
-        </section>
+duplexPipe.upstream.write('hello, downstream');</code></pre></dd>
+        <dt>should support pause and resume</dt>
+        <dd><pre><code>var duplexPipe = new DuplexPipe();
+var checkList = new CheckList([
+  'resume',
+  'hello, upstream',
+  'hello, downstream'
+], {
+  ordered: true
+}, done);
+duplexPipe.downstream.pause();
+duplexPipe.upstream.pause();
+duplexPipe.upstream.write('hello, downstream');
+duplexPipe.downstream.write('hello, upstream');
+duplexPipe.downstream.on('data', function(data) {
+  checkList.check(data);
+});
+duplexPipe.upstream.on('data', function(data) {
+  checkList.check(data);
+});
+setTimeout(function() {
+  checkList.check('resume');
+  duplexPipe.upstream.resume();
+  duplexPipe.downstream.resume();
+}, 0);</code></pre></dd>
+        <dt>should support the setEncoding method</dt>
+        <dd><pre><code>var duplexPipe = new DuplexPipe();
+duplexPipe.upstream.setEncoding('utf8');
+duplexPipe.downstream.setEncoding('utf8');</code></pre></dd>
       </dl>
     </section>
 

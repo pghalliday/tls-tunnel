@@ -67,4 +67,10 @@ describe('DuplexPipe', function() {
       duplexPipe.downstream.resume();
     }, 0);
   });
+  
+  it('should support the setEncoding method', function() {
+    var duplexPipe = new DuplexPipe();
+    duplexPipe.upstream.setEncoding('utf8');
+    duplexPipe.downstream.setEncoding('utf8');
+  });
 });

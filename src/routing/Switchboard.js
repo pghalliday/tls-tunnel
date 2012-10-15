@@ -16,13 +16,11 @@ function Switchboard(portRange) {
         var connections = [];
         var serverAndConnections = {
           server: server,
-          connections: connections
+          connections: connections,
+          port: port
         };
-        serversAndConnections.push(serverAndConnections);
-        server.on('close', function() {
-          serversAndConnections.splice(serversAndConnections.indexOf(serverAndConnections), 1);
-        });
         server.listen(port, function() {
+          serversAndConnections.push(serverAndConnections);
           server.on('connection', function(connection) {
             connections.push(connection);
             connection.on('end', function() {
@@ -41,28 +39,12 @@ function Switchboard(portRange) {
         serverAndConnections.connections.forEach(function(connection) {
           connection.end();
         });
+        serversAndConnections.splice(serversAndConnections.indexOf(serverAndConnections), 1);
         serverAndConnections.server.close(function() {
+          portRange.push(serverAndConnections.port);
           callback();
         });
       }
-    });
-  };
-
-  self.stopAll = function(callback) {
-    var serverCount = serversAndConnections.length;
-    if (serverCount === 0) {
-      callback();
-    }
-    serversAndConnections.forEach(function(serverAndConnections) {
-      serverAndConnections.connections.forEach(function(connection) {
-        connection.end();
-      });
-      serverAndConnections.server.close(function() {
-        serverCount--;
-        if (serverCount === 0) {
-          callback();
-        }
-      });
     });
   };
 }

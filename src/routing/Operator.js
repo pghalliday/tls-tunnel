@@ -10,18 +10,21 @@ function Operator(secureServer, switchboard, timeout) {
     secureConnection.on('end', function() {
       secureConnections.splice(secureConnections.indexOf(secureConnection), 1);
     });
+    secureConnection.setEncoding('utf8');
     secureConnection.once('data', function(data) {
       if (data === 'open') {
         switchboard.startServer(function(error, server) {
           if (error) {
             secureConnection.end('open:error:' + error.message);
           } else {
+            secureConnection.upstreamServer = server;
             secureConnection.on('end', function() {
-              switchboard.stopServer(server, function() {
-                // TODO: Is this a smell? Feels like i'm losing control
-                // because I can't think of anything I might want to use
-                // this callback for here (it's useful elsewhere, ie. tests)
-              });
+              // only stop the upstream server if it wasn't already stopped
+              if (secureConnection.upstreamServer) {
+                switchboard.stopServer(secureConnection.upstreamServer, function() {
+                  secureConnection.upstreamServer = null;
+                });
+              }
             });
             secureConnection.write('open:success:' + server.getConnectionString());
             server.on('connection', function(connection) {
@@ -59,11 +62,30 @@ function Operator(secureServer, switchboard, timeout) {
     });
   });
   
-  self.cleanup = function(callback) {
-    secureConnections.forEach(function(secureConnection) {
-      secureConnection.end();
-    });
-    switchboard.stopAll(callback);
+  self.cleanUp = function(callback) {
+    var count = secureConnections.length;
+    if (count === 0) {
+      callback();
+    } else {
+      secureConnections.forEach(function(secureConnection) {
+        if (secureConnection.upstreamServer) {
+          switchboard.stopServer(secureConnection.upstreamServer, function() {
+            secureConnection.upstreamServer = null;
+            secureConnection.end();
+            count--;
+            if (count === 0) {
+              callback();
+            }
+          });
+        } else {
+          secureConnection.end();
+          count--;
+          if (count === 0) {
+            callback();
+          }
+        }
+      });
+    }
   };
 }
 

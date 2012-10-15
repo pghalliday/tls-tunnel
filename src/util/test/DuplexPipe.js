@@ -51,6 +51,10 @@ function DuplexPipe() {
       }
       otherEnd.emitOrBuffer('end', data);
     };
+    
+    self.setEncoding = function(encoding) {
+      
+    };
   }
   util.inherits(EndPoint, Stream);
   

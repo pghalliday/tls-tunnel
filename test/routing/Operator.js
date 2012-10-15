@@ -155,8 +155,8 @@ describe('Operator', function() {
       startServer: function(callback) {
         callback(null, mockServer);
       },
-      stopAll: function(callback) {
-        checkList.check('switchboard');
+      stopServer: function(server, callback) {
+        checkList.check(server);
         callback();
       }
     };
@@ -164,7 +164,17 @@ describe('Operator', function() {
     var duplexPipe1 = new DuplexPipe();
     var duplexPipe2 = new DuplexPipe();
     var duplexPipe3 = new DuplexPipe();
-    var checkList = new CheckList([duplexPipe1, duplexPipe2, duplexPipe3, 'switchboard', operator], done);
+    
+    var checkList = new CheckList([
+      duplexPipe1,
+      duplexPipe2, 
+      duplexPipe3, 
+      mockServer, 
+      mockServer, 
+      mockServer, 
+      operator
+    ], done);
+    
     duplexPipe1.downstream.on('end', function() {
       checkList.check(duplexPipe1);
     });
@@ -177,7 +187,11 @@ describe('Operator', function() {
     mockSecureServer.emit('secureConnection', duplexPipe1.upstream);
     mockSecureServer.emit('secureConnection', duplexPipe2.upstream);
     mockSecureServer.emit('secureConnection', duplexPipe3.upstream);
-    operator.cleanup(function() {
+    duplexPipe1.downstream.write('open');
+    duplexPipe2.downstream.write('open');
+    duplexPipe3.downstream.write('open');
+    
+    operator.cleanUp(function() {
       checkList.check(operator);
     });
   });
