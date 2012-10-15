@@ -1,8 +1,14 @@
-function CheckList(items, callback) {
+function CheckList(items, options, callback) {
   var self = this;
   var calledBack = false;
   var complete = false;
   
+  // deal with the optional options parameter
+  if (typeof callback === 'undefined') {
+    callback = options;
+    options = {};
+  }
+
   if (items.length === 0) {
     calledBack = true;
     complete = true;
@@ -16,6 +22,9 @@ function CheckList(items, callback) {
       }
     } else {
       var index = items.indexOf(item);
+      if (options.ordered && index !== 0) {
+        index = -1;
+      }
       if (index === -1) {
         calledBack = true;
         callback(new Error('Not waiting for item: ' + item));

@@ -39,6 +39,21 @@ describe('CheckList', function() {
     checkList.check('hello');
   });
   
+  it('should callback with an error if an item is checked off out of order and ordered has been set to true', function(done) {
+    var checkList = new CheckList([
+      'test', 
+      5, 
+      'hello'], {
+        ordered: true
+      }, function(error) {
+      expect(error.toString()).to.equal((new Error('Not waiting for item: hello')).toString());
+      done();
+    });
+    checkList.check('test');
+    checkList.check('hello');
+    checkList.check(5);
+  });
+
   it('should not callback again after error', function() {
     var callbackCount = 0;
     var checkList = new CheckList(['test', 5, 'hello'], function(error) {
