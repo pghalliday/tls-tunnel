@@ -1,4 +1,4 @@
-function CheckList(items, options, callback) {
+function Checklist(items, options, callback) {
   var self = this;
   var calledBack = false;
   var complete = false;
@@ -40,4 +40,4 @@ function CheckList(items, options, callback) {
   };
 }
 
-module.exports = CheckList;
+module.exports = Checklist;

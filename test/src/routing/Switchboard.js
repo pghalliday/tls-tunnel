@@ -1,7 +1,7 @@
 var expect = require('chai').expect,
-    Switchboard = require('../../src/routing/Switchboard'),
-    Range = require('../../src/util/Range'),
-    Checklist = require('../../src/util/test/CheckList'),
+    Switchboard = require('../../../src/routing/Switchboard'),
+    Range = require('../../../src/util/Range'),
+    Checklist = require('../../../src/util/test/Checklist'),
     net = require('net');
 
 var START_PORT = 8081,

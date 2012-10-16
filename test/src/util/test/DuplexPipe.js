@@ -1,6 +1,6 @@
 var expect = require('chai').expect,
-    DuplexPipe = require('../../../src/util/test/DuplexPipe'),
-    Checklist = require('../../../src/util/test/Checklist');
+    DuplexPipe = require('../../../../src/util/test/DuplexPipe'),
+    Checklist = require('../../../../src/util/test/Checklist');
     
 describe('DuplexPipe', function() {
   it('should construct with no arguments', function() {

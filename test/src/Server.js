@@ -1,17 +1,17 @@
 var expect = require('chai').expect,
-    Server = require('../src/Server'),
+    Server = require('../../src/Server'),
     tls = require('tls'),
     fs = require('fs'),
     net = require('net'),
-    CheckList = require('../src/util/test/CheckList');
+    Checklist = require('../../src/util/test/Checklist');
 
 var PORT = 8080,
-    SERVER_KEY = fs.readFileSync('./keys/server-key.pem'),
-    SERVER_CERT = fs.readFileSync('./keys/server-cert.pem'),
-    CLIENT_KEY = fs.readFileSync('./keys/client-key.pem'),
-    CLIENT_CERT = fs.readFileSync('./keys/client-cert.pem'),
-    UNKNOWN_CLIENT_KEY = fs.readFileSync('./keys/unknown-client-key.pem'),
-    UNKNOWN_CLIENT_CERT = fs.readFileSync('./keys/unknown-client-cert.pem'),
+    SERVER_KEY = fs.readFileSync('./test/keys/server-key.pem'),
+    SERVER_CERT = fs.readFileSync('./test/keys/server-cert.pem'),
+    CLIENT_KEY = fs.readFileSync('./test/keys/client-key.pem'),
+    CLIENT_CERT = fs.readFileSync('./test/keys/client-cert.pem'),
+    UNKNOWN_CLIENT_KEY = fs.readFileSync('./test/keys/unknown-client-key.pem'),
+    UNKNOWN_CLIENT_CERT = fs.readFileSync('./test/keys/unknown-client-cert.pem'),
     START_PORT = 8081,
     PORT_LIMIT = 3;
 
@@ -23,7 +23,8 @@ var SERVER_OPTIONS = {
   forwardedPorts: {
     start: START_PORT,
     count: PORT_LIMIT
-  }
+  },
+  timeout: 5000
 };
 
 describe('Server', function() {
@@ -34,7 +35,7 @@ describe('Server', function() {
   });
 
   it('should end any open streams and stop when requested', function(done) {
-    var checkList = new CheckList(['stopped', 'closed'], function(error) {
+    var checklist = new Checklist(['stopped', 'closed'], function(error) {
       expect(error).to.be.an('undefined');
       done();
     });
@@ -47,10 +48,10 @@ describe('Server', function() {
         ca: [SERVER_CERT]
       }, function() {
         connection.on('close', function() {
-          checkList.check('closed');
+          checklist.check('closed');
         });
         server.stop(function() {
-          checkList.check('stopped');
+          checklist.check('stopped');
         });
       });
     });    

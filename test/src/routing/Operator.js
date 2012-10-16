@@ -1,8 +1,8 @@
 var expect = require('chai').expect,
-    Operator = require('../../src/routing/Operator'),
+    Operator = require('../../../src/routing/Operator'),
     EventEmitter = require('events').EventEmitter,
-    CheckList = require('../../src/util/test/CheckList'),
-    DuplexPipe = require('../../src/util/test/DuplexPipe');
+    Checklist = require('../../../src/util/test/Checklist'),
+    DuplexPipe = require('../../../src/util/test/DuplexPipe');
        
 describe('Operator', function() {  
   it('should respond to open requests with the success responses from the switchboard', function(done) {
@@ -35,13 +35,13 @@ describe('Operator', function() {
     };
     var operator = new Operator(mockSecureServer, mockSwitchboard);
     var duplexPipe = new DuplexPipe();
-    var checkList = new CheckList(['end', 'data'], done);
+    var checklist = new Checklist(['end', 'data'], done);
     duplexPipe.downstream.on('data', function(data) {
       expect(data).to.equal('open:error:Something went wrong');
-      checkList.check('data');
+      checklist.check('data');
     });
     duplexPipe.downstream.on('end', function() {
-      checkList.check('end');
+      checklist.check('end');
     });
     mockSecureServer.emit('secureConnection', duplexPipe.upstream);
     duplexPipe.downstream.write('open');
@@ -62,17 +62,17 @@ describe('Operator', function() {
     var downstreamControlDuplexPipe = new DuplexPipe();
     var downstreamDuplexPipe = new DuplexPipe();
     var upstreamDuplexPipe = new DuplexPipe();
-    var checkList = new CheckList(['open', 'connect', 'data'], done);
+    var checklist = new Checklist(['open', 'connect', 'data'], done);
     downstreamControlDuplexPipe.downstream.once('data', function(data) {
       expect(data).to.equal('open:success:ConnectionString');
-      checkList.check('open');
+      checklist.check('open');
       downstreamControlDuplexPipe.downstream.on('data', function(data) {
         expect(data).to.match(/^connect:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/, 'connect string shouold containa valid UUID v1');
-        checkList.check('connect');
+        checklist.check('connect');
         mockSecureServer.emit('secureConnection', downstreamDuplexPipe.upstream);
         downstreamDuplexPipe.downstream.on('data', function(data) {
           expect(data).to.equal('This is a test');
-          checkList.check('data');
+          checklist.check('data');
         });
         downstreamDuplexPipe.downstream.write(data);
       });
@@ -80,7 +80,7 @@ describe('Operator', function() {
     mockSecureServer.emit('secureConnection', downstreamControlDuplexPipe.upstream);
     downstreamControlDuplexPipe.downstream.write('open');
     upstreamDuplexPipe.upstream.on('end', function() {
-      checkList.check('end');
+      checklist.check('end');
     });
     mockServer.emit('connection', upstreamDuplexPipe.downstream);
     upstreamDuplexPipe.upstream.write('This is a test');
@@ -101,19 +101,19 @@ describe('Operator', function() {
     var downstreamControlDuplexPipe = new DuplexPipe();
     var downstreamDuplexPipe = new DuplexPipe();
     var upstreamDuplexPipe = new DuplexPipe();
-    var checkList = new CheckList(['open', 'connect', 'end'], done);
+    var checklist = new Checklist(['open', 'connect', 'end'], done);
     downstreamControlDuplexPipe.downstream.once('data', function(data) {
       expect(data).to.equal('open:success:ConnectionString');
-      checkList.check('open');
+      checklist.check('open');
       downstreamControlDuplexPipe.downstream.on('data', function(data) {
         expect(data).to.match(/^connect:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/, 'connect string shouold containa valid UUID v1');
-        checkList.check('connect');
+        checklist.check('connect');
       });
     });
     mockSecureServer.emit('secureConnection', downstreamControlDuplexPipe.upstream);
     downstreamControlDuplexPipe.downstream.write('open');
     upstreamDuplexPipe.upstream.on('end', function() {
-      checkList.check('end');
+      checklist.check('end');
     });
     mockServer.emit('connection', upstreamDuplexPipe.downstream);
     upstreamDuplexPipe.upstream.write('This is a test');
@@ -158,7 +158,7 @@ describe('Operator', function() {
         callback(null, mockServer);
       },
       stopServer: function(server, callback) {
-        checkList.check(server);
+        checklist.check(server);
         if (callback) {
           callback();
         }
@@ -169,7 +169,7 @@ describe('Operator', function() {
     var duplexPipe2 = new DuplexPipe();
     var duplexPipe3 = new DuplexPipe();
     
-    var checkList = new CheckList([
+    var checklist = new Checklist([
       duplexPipe1,
       duplexPipe2, 
       duplexPipe3, 
@@ -180,13 +180,13 @@ describe('Operator', function() {
     ], done);
     
     duplexPipe1.downstream.on('end', function() {
-      checkList.check(duplexPipe1);
+      checklist.check(duplexPipe1);
     });
     duplexPipe2.downstream.on('end', function() {
-      checkList.check(duplexPipe2);
+      checklist.check(duplexPipe2);
     });
     duplexPipe3.downstream.on('end', function() {
-      checkList.check(duplexPipe3);
+      checklist.check(duplexPipe3);
     });
     mockSecureServer.emit('secureConnection', duplexPipe1.upstream);
     mockSecureServer.emit('secureConnection', duplexPipe2.upstream);
@@ -196,7 +196,7 @@ describe('Operator', function() {
     duplexPipe3.downstream.write('open');
     
     operator.cleanUp(function() {
-      checkList.check(operator);
+      checklist.check(operator);
     });
   });
 });
