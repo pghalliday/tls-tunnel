@@ -5,7 +5,6 @@ function Client(options) {
   var self = this;
   var controlConnection;
   var secureConnections = [];
-  var connections = [];
 
   self.connect = function(callback) {
     controlConnection = tls.connect({
@@ -35,7 +34,7 @@ function Client(options) {
           }
           callback(null, matched[1]);
         } else {
-          matched = data.match(/connect:.*/);
+          matched = data.match(/connect:(.*)/);
           if (matched) {
             var connection = net.connect({
               port: options.targetPort
@@ -54,14 +53,12 @@ function Client(options) {
                   connection.end();
                 });
                 secureConnection.write(data);
-
-                // TODO: are we sure that this piping will not send
-                // the connect data from the line above to the target server
                 secureConnection.pipe(connection);
                 connection.pipe(secureConnection);
               });
-              // TODO: handle errors while making the secure connection to ensure
-              // that the local connection is ended too
+              secureConnection.on('error', function(error) {
+                connection.end();
+              });
             });
           } else {
             // TODO: should we emit an error event and end the
