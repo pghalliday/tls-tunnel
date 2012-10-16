@@ -36,9 +36,11 @@ function Client(options) {
         } else {
           matched = data.match(/connect:(.*)/);
           if (matched) {
+            // TODO: enforce a connection limit?
             var connection = net.connect({
               port: options.targetPort
             }, function() {
+              // TODO: handle inactive timeouts and other errors?
               var secureConnection = tls.connect({
                 host: options.host,
                 port: options.port,
@@ -47,6 +49,7 @@ function Client(options) {
                 ca: options.ca,
                 rejectUnauthorized: true
               }, function() {
+                // TODO: handle inactive timeouts and other errors?
                 secureConnections.push(secureConnection);
                 secureConnection.on('end', function() {
                   secureConnections.splice(secureConnections.indexOf(secureConnection), 1);
@@ -58,7 +61,12 @@ function Client(options) {
               });
               secureConnection.on('error', function(error) {
                 connection.end();
+                // TODO: remove this error listener on successful connection?
               });
+            });
+            connection.on('error', function() {
+              // TODO: errors should be reported back to the server
+              // TODO: remove this error listener on successful connection?
             });
           } else {
             // TODO: should we emit an error event and end the
