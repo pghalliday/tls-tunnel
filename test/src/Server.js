@@ -10,8 +10,8 @@ var PORT = 8080,
     SERVER_CERT = fs.readFileSync('./test/keys/server-cert.pem'),
     CLIENT_KEY = fs.readFileSync('./test/keys/client-key.pem'),
     CLIENT_CERT = fs.readFileSync('./test/keys/client-cert.pem'),
-    UNKNOWN_CLIENT_KEY = fs.readFileSync('./test/keys/unknown-client-key.pem'),
-    UNKNOWN_CLIENT_CERT = fs.readFileSync('./test/keys/unknown-client-cert.pem'),
+    UNKNOWN_KEY = fs.readFileSync('./test/keys/unknown-key.pem'),
+    UNKNOWN_CERT = fs.readFileSync('./test/keys/unknown-cert.pem'),
     START_PORT = 8081,
     PORT_LIMIT = 3;
 
@@ -35,10 +35,7 @@ describe('Server', function() {
   });
 
   it('should end any open streams and stop when requested', function(done) {
-    var checklist = new Checklist(['stopped', 'closed'], function(error) {
-      expect(error).to.be.an('undefined');
-      done();
-    });
+    var checklist = new Checklist(['stopped', 'closed'], done);
     server.start(function() {
       var stoppedEventsReceived = 0;
       var connection = tls.connect({
@@ -62,8 +59,12 @@ describe('Server', function() {
       server.start(done);
     });
 
-    it('should accept TLS connections on the configured port and assign an external port for forwarding', function(done) {
-      var dataEventCount = 0;
+    it('should accept TLS connections on the configured port, assign an external port for forwarding and emit an event', function(done) {
+      var checklist = new Checklist(['open', 'open:success:' + START_PORT, 'end'], done);
+      server.once('open', function(forwardedPort) {
+        expect(forwardedPort).to.equal(START_PORT);
+        checklist.check('open');
+      });
       var connection = tls.connect({
         port: PORT,
         key: CLIENT_KEY,
@@ -72,13 +73,11 @@ describe('Server', function() {
         connection.write('open');
         connection.setEncoding('utf8');
         connection.on('data', function(data) {
-          dataEventCount++;
-          expect(data).to.equal('open:success:' + START_PORT);
+          checklist.check(data);
           connection.end();
         });
         connection.on('end', function() {
-          expect(dataEventCount).to.equal(1);
-          done();
+          checklist.check('end');
         });
       });
     });
@@ -149,8 +148,8 @@ describe('Server', function() {
       var secureConnectEventCount = 0;
       var connection = tls.connect({
         port: PORT,
-        key: UNKNOWN_CLIENT_KEY,
-        cert: UNKNOWN_CLIENT_CERT
+        key: UNKNOWN_KEY,
+        cert: UNKNOWN_CERT
       }, function() {
         secureConnectEventCount++;
       });

@@ -1,15 +1,16 @@
 var expect = require('chai').expect,
     Client = require('../../src/Client'),
     Server = require('../../src/Server'),
-    fs = require('fs');
+    fs = require('fs'),
+    Checklist = require('../../src/util/test/Checklist');
 
 var PORT = 8080,
     SERVER_KEY = fs.readFileSync('./test/keys/server-key.pem'),
     SERVER_CERT = fs.readFileSync('./test/keys/server-cert.pem'),
     CLIENT_KEY = fs.readFileSync('./test/keys/client-key.pem'),
     CLIENT_CERT = fs.readFileSync('./test/keys/client-cert.pem'),
-    UNKNOWN_CLIENT_KEY = fs.readFileSync('./test/keys/unknown-client-key.pem'),
-    UNKNOWN_CLIENT_CERT = fs.readFileSync('./test/keys/unknown-client-cert.pem'),
+    UNKNOWN_KEY = fs.readFileSync('./test/keys/unknown-key.pem'),
+    UNKNOWN_CERT = fs.readFileSync('./test/keys/unknown-cert.pem'),
     START_PORT = 8081,
     PORT_LIMIT = 3;
 
@@ -33,8 +34,27 @@ describe('Client', function() {
     server.start(done);
   });
 
-  it('should construct', function() {
-    var client = new Client();
+  it('should connect to the server and trigger a port to be opened', function(done) {
+    var checklist = new Checklist([START_PORT, null, START_PORT, 'disconnected'], done);
+    server.once('open', function(port) {
+      checklist.check(port);
+    });
+    var client = new Client({
+      host: '127.0.0.1',
+      port: 8080,
+      key: CLIENT_KEY,
+      cert: CLIENT_CERT,
+      ca: [SERVER_CERT],
+      targetPort: 8000,
+      timeout: 5000
+    });
+    client.connect(function(error, port) {
+      checklist.check(error);
+      checklist.check(port);
+      client.disconnect(function() {
+        checklist.check('disconnected');
+      });
+    });
   });
 
   after(function(done) {

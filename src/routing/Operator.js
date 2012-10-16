@@ -1,4 +1,6 @@
-var uuid = require('node-uuid');
+var uuid = require('node-uuid'),
+    util = require('util'),
+    EventEmitter = require('events').EventEmitter;
 
 function Operator(secureServer, switchboard, timeout) {
   var self = this,
@@ -22,6 +24,7 @@ function Operator(secureServer, switchboard, timeout) {
               switchboard.stopServer(server);
             });
             secureConnection.write('open:success:' + server.getConnectionString());
+            self.emit('open', server.getConnectionString());
             server.on('connection', function(connection) {
               connection.pause();
               var id = uuid.v1();
@@ -72,5 +75,6 @@ function Operator(secureServer, switchboard, timeout) {
     });
   };
 }
+util.inherits(Operator, EventEmitter);
 
 module.exports = Operator;

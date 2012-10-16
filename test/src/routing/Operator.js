@@ -5,7 +5,7 @@ var expect = require('chai').expect,
     DuplexPipe = require('../../../src/util/test/DuplexPipe');
        
 describe('Operator', function() {  
-  it('should respond to open requests with the success responses from the switchboard', function(done) {
+  it('should respond to open requests with the success responses from the switchboard and emit an open event', function(done) {
     var mockSecureServer = new EventEmitter();
     var mockServer = new EventEmitter();
     mockServer.getConnectionString = function() {
@@ -16,11 +16,14 @@ describe('Operator', function() {
         callback(null, mockServer);
       }
     };
-    var operator = new Operator(mockSecureServer, mockSwitchboard);
     var duplexPipe = new DuplexPipe();
+    var operator = new Operator(mockSecureServer, mockSwitchboard);
+    var checklist = new Checklist(['ConnectionString', 'open:success:ConnectionString'], done);
+    operator.on('open', function(connectionString) {
+      checklist.check(connectionString);
+    });
     duplexPipe.downstream.on('data', function(data) {
-      expect(data).to.equal('open:success:ConnectionString');
-      done();
+      checklist.check(data);
     });
     mockSecureServer.emit('secureConnection', duplexPipe.upstream);
     duplexPipe.downstream.write('open');

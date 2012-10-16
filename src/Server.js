@@ -1,7 +1,9 @@
 var tls = require('tls'),
     Range = require('./util/Range'),
     Switchboard = require('./routing/Switchboard'),
-    Operator = require('./routing/Operator');
+    Operator = require('./routing/Operator'),
+    util = require('util'),
+    EventEmitter = require('events').EventEmitter;
 
 function Server(options) {
 	var self = this,
@@ -18,6 +20,9 @@ function Server(options) {
 
   var switchboard = new Switchboard(new Range(options.forwardedPorts.start, options.forwardedPorts.count));
   var operator = new Operator(secureServer, switchboard, options.timeout);
+  operator.on('open', function(connectionString) {
+    self.emit('open', parseInt(connectionString, 10));
+  });
 
 	self.start = function(callback) {
 		secureServer.listen(options.port, callback);
@@ -29,5 +34,6 @@ function Server(options) {
     });
 	};
 }
+util.inherits(Server, EventEmitter);
 
 module.exports = Server;
