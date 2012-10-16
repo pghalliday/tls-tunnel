@@ -50,7 +50,7 @@ describe('Operator', function() {
     duplexPipe.downstream.write('open');
   });
 
-  it('should request downstream connections to match incoming connections from upstream servers', function(done) {
+  it('should request downstream connections to match incoming connections from upstream servers and emit a connect event when established', function(done) {
     var mockSecureServer = new EventEmitter();
     var mockServer = new EventEmitter();
     mockServer.getConnectionString = function() {
@@ -65,7 +65,10 @@ describe('Operator', function() {
     var downstreamControlDuplexPipe = new DuplexPipe();
     var downstreamDuplexPipe = new DuplexPipe();
     var upstreamDuplexPipe = new DuplexPipe();
-    var checklist = new Checklist(['open', 'connect', 'data'], done);
+    var checklist = new Checklist(['open', 'connect', 'This is a test', 'ConnectionString'], done);
+    operator.on('connect', function(connectionString) {
+      checklist.check(connectionString);
+    });
     downstreamControlDuplexPipe.downstream.once('data', function(data) {
       expect(data).to.equal('open:success:ConnectionString');
       checklist.check('open');
@@ -74,8 +77,7 @@ describe('Operator', function() {
         checklist.check('connect');
         mockSecureServer.emit('secureConnection', downstreamDuplexPipe.upstream);
         downstreamDuplexPipe.downstream.on('data', function(data) {
-          expect(data).to.equal('This is a test');
-          checklist.check('data');
+          checklist.check(data);
         });
         downstreamDuplexPipe.downstream.write(data);
       });

@@ -30,6 +30,7 @@ function Operator(secureServer, switchboard, timeout) {
               var id = uuid.v1();
               pausedConnections[id] = {
                 connection: connection,
+                connectionString: server.getConnectionString(),
                 timeout: timeout ? setTimeout(function() {
                   delete pausedConnections[id];
                   connection.end();
@@ -47,6 +48,7 @@ function Operator(secureServer, switchboard, timeout) {
           if (pausedConnection) {
             delete pausedConnections[id[1]];
             clearTimeout(pausedConnection.timeout);
+            self.emit('connect', pausedConnection.connectionString);
             pausedConnection.connection.pipe(secureConnection);
             secureConnection.pipe(pausedConnection.connection);
             pausedConnection.connection.resume();

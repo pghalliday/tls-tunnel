@@ -23,6 +23,9 @@ function Server(options) {
   operator.on('open', function(connectionString) {
     self.emit('open', parseInt(connectionString, 10));
   });
+  operator.on('connect', function(connectionString) {
+    self.emit('connect', parseInt(connectionString, 10));
+  });
 
 	self.start = function(callback) {
 		secureServer.listen(options.port, callback);

@@ -191,7 +191,11 @@ describe('Server', function() {
         });
       });
       
-      it('should accept unencrypted connections to the forwarded port and send data to the target', function(done) {
+      it('should accept unencrypted connections to the forwarded port, emit a connect event and send data to the target', function(done) {
+        var checklist = new Checklist([forwardedPort,'This is a testThis is also a test'], done);
+        server.once('connect', function(port) {
+          checklist.check(port);
+        });
         var dataConnection;
         var client = net.connect({
           port: forwardedPort
@@ -208,8 +212,7 @@ describe('Server', function() {
                 allData += data;
               });
               dataConnection.on('end', function() {
-                expect(allData).to.equal('This is a testThis is also a test');
-                done();
+                checklist.check('This is a testThis is also a test');
               });
               dataConnection.write(data);
             });
