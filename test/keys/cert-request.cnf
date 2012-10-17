@@ -1,0 +1,13 @@
+[ req ]
+default_bits           = 1024
+default_keyfile        = keyfile.pem
+distinguished_name     = req_distinguished_name
+prompt                 = no
+
+[ req_distinguished_name ]
+C = US
+ST = Washington
+L = Seattle
+O = MyCompany
+OU = MyUnit
+CN = John Smith
