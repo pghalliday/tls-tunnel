@@ -13,8 +13,10 @@ var HOST = '127.0.0.1',
     SERVER_CERT = fs.readFileSync('./test/keys/server-cert.pem'),
     CLIENT_KEY = fs.readFileSync('./test/keys/client-key.pem'),
     CLIENT_CERT = fs.readFileSync('./test/keys/client-cert.pem'),
-    UNKNOWN_KEY = fs.readFileSync('./test/keys/unknown-key.pem'),
-    UNKNOWN_CERT = fs.readFileSync('./test/keys/unknown-cert.pem'),
+    UNKNOWN_SERVER_KEY = fs.readFileSync('./test/keys/unknown-server-key.pem'),
+    UNKNOWN_SERVER_CERT = fs.readFileSync('./test/keys/unknown-server-cert.pem'),
+    UNKNOWN_CLIENT_KEY = fs.readFileSync('./test/keys/unknown-client-key.pem'),
+    UNKNOWN_CLIENT_CERT = fs.readFileSync('./test/keys/unknown-client-cert.pem'),
     START_PORT = 8081,
     PORT_LIMIT = 3;
 
@@ -97,7 +99,7 @@ describe('Client', function() {
         port: PORT,
         key: CLIENT_KEY,
         cert: CLIENT_CERT,
-        ca: [UNKNOWN_CERT],
+        ca: [UNKNOWN_SERVER_CERT],
         targetPort: TARGET_PORT,
         timeout: 5000
       });
@@ -111,8 +113,8 @@ describe('Client', function() {
       var client = new Client({
         host: HOST,
         port: PORT,
-        key: UNKNOWN_KEY,
-        cert: UNKNOWN_CERT,
+        key: UNKNOWN_CLIENT_KEY,
+        cert: UNKNOWN_CLIENT_CERT,
         ca: [SERVER_CERT],
         targetPort: TARGET_PORT,
         timeout: 5000

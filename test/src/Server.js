@@ -10,8 +10,8 @@ var PORT = 8080,
     SERVER_CERT = fs.readFileSync('./test/keys/server-cert.pem'),
     CLIENT_KEY = fs.readFileSync('./test/keys/client-key.pem'),
     CLIENT_CERT = fs.readFileSync('./test/keys/client-cert.pem'),
-    UNKNOWN_KEY = fs.readFileSync('./test/keys/unknown-key.pem'),
-    UNKNOWN_CERT = fs.readFileSync('./test/keys/unknown-cert.pem'),
+    UNKNOWN_CLIENT_KEY = fs.readFileSync('./test/keys/unknown-client-key.pem'),
+    UNKNOWN_CLIENT_CERT = fs.readFileSync('./test/keys/unknown-client-cert.pem'),
     START_PORT = 8081,
     PORT_LIMIT = 3;
 
@@ -148,8 +148,8 @@ describe('Server', function() {
       var secureConnectEventCount = 0;
       var connection = tls.connect({
         port: PORT,
-        key: UNKNOWN_KEY,
-        cert: UNKNOWN_CERT
+        key: UNKNOWN_CLIENT_KEY,
+        cert: UNKNOWN_CLIENT_CERT
       }, function() {
         secureConnectEventCount++;
       });
