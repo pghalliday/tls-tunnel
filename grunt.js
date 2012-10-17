@@ -1,8 +1,7 @@
-/*global module:false*/
 module.exports = function(grunt) {
 
-  // Add mochaTest task
   grunt.loadNpmTasks('grunt-mocha-test');
+  grunt.loadNpmTasks('grunt-contrib-watch');
 
   function getLintConfig() {
     return {
@@ -17,7 +16,8 @@ module.exports = function(grunt) {
         undef: true,
         boss: true,
         eqnull: true,
-        es5: true
+        es5: true,
+        strict: false
       },
       globals: {
       }
