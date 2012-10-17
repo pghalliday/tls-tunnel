@@ -43,15 +43,15 @@ module.exports = function(grunt) {
   grunt.initConfig({
     lint: {
       node: ['grunt.js', 'src/**/*.js'],
-      nodeTest: ['test/**/*.js']
+      nodeTest: ['test/src/**/*.js']
     },
     jshint: {
       node: getNodeLintConfig(),
       nodeTest: getNodeTestLintConfig()
     },
     mochaTest: {
-      test: ['test/**/*.js'],
-      doc: ['test/**/*.js']
+      test: ['test/src/**/*.js'],
+      doc: ['test/src/**/*.js']
     },
     mochaTestConfig: {
       test: {
@@ -67,7 +67,7 @@ module.exports = function(grunt) {
     },
     watch: {
       scripts: {
-        files: ['grunt.js', 'src/**/*.js', 'test/**/*.js'],
+        files: ['grunt.js', 'src/**/*.js', 'test/src/**/*.js'],
         tasks: 'default'
       }
     }
