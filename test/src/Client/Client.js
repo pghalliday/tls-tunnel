@@ -1,8 +1,8 @@
 var expect = require('chai').expect,
-    Client = require('../../src/Client'),
-    Server = require('../../src/Server'),
+    Client = require('../../../src/Client/Client'),
+    Server = require('../../../src/Server/Server'),
     fs = require('fs'),
-    Checklist = require('../../src/util/test/Checklist'),
+    Checklist = require('../../../src/util/test/Checklist'),
     tls = require('tls'),
     net = require('net');
 

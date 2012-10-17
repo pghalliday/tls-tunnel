@@ -66,10 +66,8 @@ module.exports = function(grunt) {
       }
     },
     watch: {
-      scripts: {
-        files: ['grunt.js', 'src/**/*.js', 'test/src/**/*.js', 'test/integration/**/*.js'],
-        tasks: 'default'
-      }
+      files: ['grunt.js', 'src/**/*.js', 'test/src/**/*.js', 'test/integration/**/*.js'],
+      tasks: ['default']
     }
   });
 

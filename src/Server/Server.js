@@ -1,7 +1,7 @@
 var tls = require('tls'),
-    Range = require('./util/Range'),
-    Switchboard = require('./routing/Switchboard'),
-    Operator = require('./routing/Operator'),
+    Range = require('../util/Range'),
+    Switchboard = require('./Switchboard'),
+    Operator = require('./Operator'),
     util = require('util'),
     EventEmitter = require('events').EventEmitter;
 

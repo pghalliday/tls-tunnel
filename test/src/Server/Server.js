@@ -1,9 +1,9 @@
 var expect = require('chai').expect,
-    Server = require('../../src/Server'),
+    Server = require('../../../src/Server/Server'),
     tls = require('tls'),
     fs = require('fs'),
     net = require('net'),
-    Checklist = require('../../src/util/test/Checklist');
+    Checklist = require('../../../src/util/test/Checklist');
 
 var PORT = 8080,
     SERVER_KEY = fs.readFileSync('./test/keys/server-key.pem'),
