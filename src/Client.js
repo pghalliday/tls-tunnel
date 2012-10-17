@@ -26,16 +26,28 @@ function Client(options) {
       }
       controlConnection.setEncoding('utf8');
       controlConnection.on('data', function(data) {
-        var matched = data.match(/^open:success:(.*)$/);
-        if (matched) {
+        var opened = data.match(/^open:(.*)$/);
+        if (opened) {
           if (timeout) {
             clearTimeout(timeout);
             timeout = null;
           }
-          callback(null, matched[1]);
+          var success = opened[1].match(/^success:(.*)$/);
+          if (success) {
+            callback(null, success[1]);
+          } else {
+            var error = opened[1].match(/^error:(.*)$/);
+            if (error) {
+              callback(new Error('Server rejected connection: ' + error[1]));
+            } else {
+              // TODO: should we emit an error event and end the
+              // secureConnection here - after all we expect the server
+              // to play nice
+            }
+          }
         } else {
-          matched = data.match(/connect:(.*)/);
-          if (matched) {
+          var connected = data.match(/connect:(.*)/);
+          if (connected) {
             // TODO: enforce a connection limit?
             var connection = net.connect({
               port: options.targetPort

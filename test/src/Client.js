@@ -62,7 +62,7 @@ describe('Client', function() {
 
     it('should connect to the server, send the open request and callback once the server responds correctly', function(done) {
       var checklist = new Checklist(['connected', 'open', null, 'ConnectionString', 'disconnected'], function(error) {
-        server.removeAllListeners();
+        server.removeAllListeners('secureConnection');
         done(error);
       });
       server.on('secureConnection', function(connection) {
@@ -88,6 +88,31 @@ describe('Client', function() {
         client.disconnect(function() {
           checklist.check('disconnected');
         });
+      });
+    });
+
+    it('should handle open errors correctly', function(done) {
+      var checklist = new Checklist([(new Error('Server rejected connection: No ports available')).toString(), 'undefined'], function(error) {
+        server.removeAllListeners('secureConnection');
+        done(error);
+      });
+      server.on('secureConnection', function(connection) {
+        connection.on('data', function(data) {
+          connection.end('open:error:No ports available');
+        });
+      });
+      var client = new Client({
+        host: HOST,
+        port: PORT,
+        key: CLIENT_KEY,
+        cert: CLIENT_CERT,
+        ca: [SERVER_CERT],
+        targetPort: TARGET_PORT,
+        timeout: 5000
+      });
+      client.connect(function(error, port) {
+        checklist.check(error.toString());
+        checklist.check(typeof port);
       });
     });
 
