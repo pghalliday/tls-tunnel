@@ -109,7 +109,7 @@ It should be noted that for the client to authorize server certificates they nee
 - Test keys and certs need to be generated when running tests as they will eventually expire
 
 ## Contributing
-In lieu of a formal styleguide, take care to maintain the existing coding style. Add unit tests for any new or changed functionality. Lint and test your code using [grunt][grunt].
+In lieu of a formal styleguide, take care to maintain the existing coding style. Add unit tests for any new or changed functionality. Lint and test your code using ``./grunt.sh`` or ``.\grunt.bat``.
 
 ## Release History
 _(Nothing yet)_
