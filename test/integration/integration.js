@@ -1,6 +1,6 @@
 var expect = require('chai').expect,
-    Client = require('../../src/Client/Client'),
-    Server = require('../../src/Server/Server'),
+    Client = require('../../').Client,
+    Server = require('../../').Server,
     fs = require('fs'),
     Checklist = require('../../src/util/test/Checklist'),
     net = require('net');
