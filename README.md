@@ -5,7 +5,7 @@ A Node.js client/server implementation of a secure tunnel over TLS/SSL. Useful f
 
 The idea is simple.
 
-- A server runs on a central server accepting connections on a public host name, let's say "mytlstunnel.com"
+- A server runs on a public host accepting connections on a public host name, let's say "mytlstunnel.com"
 - Initially only one port will be open and accepting connections, eg. 8080
 - On your local machine you start a client that connects to mytlstunnel.com:8080 using a TLS socket and let it know what local port it should expose, eg. 8000
 - The server assigns another port for use with that client and starts listening on it using an ordinary net socket, notifying the client on which port it will listen, eg 8081
@@ -59,6 +59,7 @@ server.start(function() {
 To instantiate and connect a client
 
 ```javascript
+var http = require('http');
 var Client = require('tls-tunnel').Client;
 
 var client = new Client({
@@ -74,15 +75,26 @@ var client = new Client({
 client.connect(function(error, port) {
 tunnel
   if (error) {
-    // errors could include not having enough ports available on the server to support another
+    // errors could include not having enough ports available on
+    // the server to support another
   } else {
-    // only if no errors were encountered will the port parameter contain the public port that was assigned for the tunnel
-    client.disconnect(function() {
-      // client should have ended all connections
+    // only if no errors were encountered will the <port> parameter
+    // contain the public port that was assigned for the tunnel
+    http.get('http://mytlstunnel.com:' + port, function(res) {
+      // should receive a response from localhost:8000 here
+      client.disconnect(function() {
+        // client should have ended all connections
+      });
     });
   }
 });
 ```
+
+## Hints on generating certs for testing
+
+See the ``test/keys`` folder for certificates used by the tests. These can be regenerated at anytime using either ``keys.sh`` (OSX, Linux) or ``keys.bat`` (Windows). These scripts use [OpenSSL](http://www.openssl.org). OSX and Linux most likely already ship with OpenSSL. If using Windows you will need to install [OpenSSL](http://slproweb.com/products/Win32OpenSSL.html) first.
+
+It should be noted that for the client to authorize server certificates they need to have the correct hosts listed as altnames in the v3 extensions (although this doesn't seem to be required on Windows).
 
 ## Roadmap
 
@@ -94,6 +106,7 @@ tunnel
 		- HTTPS does not work
 - Server or client should be runnable from the shell
 - Client should be configurable to only accept a limited number of connections
+- Test keys and certs need to be generated when running tests as they will eventually expire
 
 ## Contributing
 In lieu of a formal styleguide, take care to maintain the existing coding style. Add unit tests for any new or changed functionality. Lint and test your code using [grunt][grunt].
