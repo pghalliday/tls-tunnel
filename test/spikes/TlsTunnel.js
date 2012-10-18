@@ -7,10 +7,10 @@ var DOWNSTREAM_PORT = 8080;
 var PROXY_PORT = 8081;
 var UPSTREAM_PORT = 8082;
 
-var SERVER_KEY = fs.readFileSync('../keys/unknown-server-key.pem');
-var SERVER_CERT = fs.readFileSync('../keys/unknown-server-cert.pem');
-var CLIENT_KEY = fs.readFileSync('../keys/unknown-client-key.pem');
-var CLIENT_CERT = fs.readFileSync('../keys/unknown-client-cert.pem');
+var SERVER_KEY = fs.readFileSync('./test/keys/unknown-server-key.pem');
+var SERVER_CERT = fs.readFileSync('./test/keys/unknown-server-cert.pem');
+var CLIENT_KEY = fs.readFileSync('./test/keys/unknown-client-key.pem');
+var CLIENT_CERT = fs.readFileSync('./test/keys/unknown-client-cert.pem');
 
 var TUNNEL_OPTIONS = {
   host: HOST,

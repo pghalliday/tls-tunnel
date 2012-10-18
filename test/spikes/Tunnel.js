@@ -16,10 +16,10 @@ module.exports.start = function(options, callback) {
   var PROXY_PORT = options.proxyPort;
   var UPSTREAM_PORT = options.upstreamPort;
 
-  var SERVER_KEY = fs.readFileSync('../keys/server-key.pem');
-  var SERVER_CERT = fs.readFileSync('../keys/server-cert.pem');
-  var CLIENT_KEY = fs.readFileSync('../keys/client-key.pem');
-  var CLIENT_CERT = fs.readFileSync('../keys/client-cert.pem');
+  var SERVER_KEY = fs.readFileSync('./test/keys/server-key.pem');
+  var SERVER_CERT = fs.readFileSync('./test/keys/server-cert.pem');
+  var CLIENT_KEY = fs.readFileSync('./test/keys/client-key.pem');
+  var CLIENT_CERT = fs.readFileSync('./test/keys/client-cert.pem');
 
   var PROXY_CLIENT_OPTIONS = {
       proxyHost: HOST,

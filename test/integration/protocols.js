@@ -40,6 +40,37 @@ describe ('Protocol', function() {
     });
   });
 
+  describe('Net', function() {
+    var net = require('net');
+
+    it('should be supported', function(done) {
+      var netServer = net.createServer();
+      netServer.on('connection', function(connection) {
+        connection.setEncoding('utf8');
+        connection.on('data', function(data) {
+          expect(data).to.equal('Hello, server');
+          connection.write('Hello, client');
+        });
+      });
+      netServer.listen(8000, function() {
+        var connection = net.connect({
+          host: '127.0.0.1',
+          port: port
+        }, function() {
+          connection.setEncoding('utf8');
+          connection.on('end', function() {
+            netServer.close(done);
+          });
+          connection.on('data', function(data) {
+            expect(data).to.equal('Hello, client');
+            connection.end();
+          });
+          connection.write('Hello, server');
+        });
+      });
+    });
+  });
+
   describe('HTTP', function() {
     var http = require('http');
     
@@ -55,18 +86,90 @@ describe ('Protocol', function() {
             expect(data).to.equal('Hello');
           });
           res.on('end', function() {
-            httpServer.close(function() {
-              done();
-            });
+            httpServer.close(done);
           });
         });
       });
     });
+  });
 
-    after(function(done) {
-      client.disconnect(function() {
-        server.stop(done);
+  describe('TLS', function() {
+    var tls = require('tls');
+
+    // TODO: Gah, why doesn't this work! ... hmm, I think it's
+    // because the socket is paused and resumed during negotiation
+    // or something. Maybe I can implement a better pause and resume
+    // flow control mechanism
+    it.skip('should be supported', function(done) {
+      var tlsServer = tls.createServer({
+        key: fs.readFileSync('./test/keys/unknown-server-key.pem'),
+        cert: fs.readFileSync('./test/keys/unknown-server-cert.pem'),
+        ca: [fs.readFileSync('./test/keys/unknown-client-cert.pem')],
+        requireCert: true,
+        rejectUnauthorized: true
       });
+      tlsServer.on('secureConnection', function(connection) {
+        connection.setEncoding('utf8');
+        connection.on('data', function(data) {
+          expect(data).to.equal('Hello, server');
+          connection.write('Hello, client');
+        });
+      });
+      tlsServer.listen(8000, function() {
+        var connection = tls.connect({
+          host: '127.0.0.1',
+          port: port,
+          key: fs.readFileSync('./test/keys/unknown-client-key.pem'),
+          cert: fs.readFileSync('./test/keys/unknown-client-cert.pem'),
+          ca: [fs.readFileSync('./test/keys/unknown-server-cert.pem')],
+          rejectUnauthorized: true
+        }, function() {
+          connection.setEncoding('utf8');
+          connection.on('end', function() {
+            tlsServer.close(done);
+          });
+          connection.on('data', function(data) {
+            expect(data).to.equal('Hello, client');
+            connection.end();
+          });
+          connection.write('Hello, server');
+        });
+      });
+    });
+  });
+
+  describe('HTTPS', function() {
+    var https = require('https');
+
+    // TODO: Gah, why doesn't this work! ... hmm, I think it's
+    // because the socket is paused and resumed during negotiation
+    // or something. Maybe I can implement a better pause and resume
+    // flow control mechanism
+    it.skip('should be supported', function(done) {
+      var httpsServer = https.createServer({
+        key: fs.readFileSync('./test/keys/unknown-server-key.pem'),
+        cert: fs.readFileSync('./test/keys/unknown-server-cert.pem'),
+      }, function(req, res) {
+        res.end('Hello');
+      });
+      httpsServer.listen(8000, function() {
+        https.get('https://127.0.0.1:' + port, function(res) {
+          res.setEncoding('utf8');
+          expect(res.statusCode).to.equal(200);
+          res.on('data', function(data) {
+            expect(data).to.equal('Hello');
+          });
+          res.on('end', function() {
+            httpsServer.close(done);
+          });
+        });
+      });
+    });
+  });
+
+  after(function(done) {
+    client.disconnect(function() {
+      server.stop(done);
     });
   });
 });
