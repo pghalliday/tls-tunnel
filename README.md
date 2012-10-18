@@ -34,6 +34,7 @@ npm install tls-tunnel
 To instantiate and start a server 
 
 ```javascript
+var fs = require('fs');
 var Server = require('tls-tunnel').Server;
 
 var server = new Server({
@@ -59,12 +60,13 @@ server.start(function() {
 To instantiate and connect a client
 
 ```javascript
+var fs = require('fs');
 var http = require('http');
 var Client = require('tls-tunnel').Client;
 
 var client = new Client({
   host: 'mytlstunnel.com',	// the host where the server is running
-  port: 8080				// the port on which the server is running
+  port: 8080,				// the port on which the server is running
   key: fs.readFileSync('./keys/client-key.pem'), 	// client's private key
   cert: fs.readFileSync('./keys/client-cert.pem'),	// client's SSL certificate
   ca: [fs.readFileSync('./keys/server-cert.pem')],	// list of authorized server SSL certificates
@@ -73,7 +75,6 @@ var client = new Client({
 });
 
 client.connect(function(error, port) {
-tunnel
   if (error) {
     // errors could include not having enough ports available on
     // the server to support another
@@ -81,7 +82,8 @@ tunnel
     // only if no errors were encountered will the <port> parameter
     // contain the public port that was assigned for the tunnel
     http.get('http://mytlstunnel.com:' + port, function(res) {
-      // should receive a response from localhost:8000 here
+      // should receive a response from localhost:8000 here 
+      // (if it's listening of course)
       client.disconnect(function() {
         // client should have ended all connections
       });
