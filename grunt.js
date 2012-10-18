@@ -1,7 +1,6 @@
 module.exports = function(grunt) {
 
   grunt.loadNpmTasks('grunt-mocha-test');
-  //grunt.loadNpmTasks('grunt-contrib-watch');
 
   function getLintConfig() {
     return {
