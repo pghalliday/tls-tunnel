@@ -16,6 +16,9 @@ function Checklist(items, options, callback) {
   }
   
   self.check = function(item) {
+    if (options.debug) {
+      console.log(item);
+    }
     if (calledBack) {
       if (complete) {
         throw(new Error('Not waiting for item as already reported completion: ' + item));

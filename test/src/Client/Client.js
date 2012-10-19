@@ -47,7 +47,7 @@ describe('Client', function() {
     });
   });
 
-  describe('with mock server', function() {
+  describe('with a mock server', function() {
     var server = tls.createServer({
       key: SERVER_KEY,
       cert: SERVER_CERT,
@@ -82,9 +82,9 @@ describe('Client', function() {
         targetPort: TARGET_PORT,
         timeout: 5000
       });
-      client.connect(function(error, port) {
+      client.connect(function(error, connectionString) {
         checklist.check(error);
-        checklist.check(port);
+        checklist.check(connectionString);
         client.disconnect(function() {
           checklist.check('disconnected');
         });
@@ -110,9 +110,80 @@ describe('Client', function() {
         targetPort: TARGET_PORT,
         timeout: 5000
       });
-      client.connect(function(error, port) {
+      client.connect(function(error, connectionString) {
         checklist.check(error.toString());
         checklist.check(typeof port);
+      });
+    });
+
+    describe('and connected', function() {
+      var target = net.createServer();
+      var upstreamConnection;
+      var client = new Client({
+        host: HOST,
+        port: PORT,
+        key: CLIENT_KEY,
+        cert: CLIENT_CERT,
+        ca: [SERVER_CERT],
+        targetPort: TARGET_PORT,
+        timeout: 5000
+      });
+
+      before(function(done) {
+        target.listen(TARGET_PORT, function() {
+          server.on('secureConnection', function(connection) {
+            upstreamConnection = connection;
+            connection.on('data', function(data) {
+              server.removeAllListeners('secureConnection');
+              connection.write('open:success:ConnectionString');
+            });
+          });
+          client.connect(done);
+        });
+      });
+
+      it('should open a connection to the target and start a new connection to the server when it receives a connect request', function(done) {
+        var checklist = new Checklist([
+          'upstream connected',
+          'connect:connection-id',
+          'downstream connected',
+          'Some forwarded traffic',
+          'A forwarded response',
+          'end'
+        ], function(error) {
+          server.removeAllListeners('secureConnection');
+          done(error);
+        });
+        server.on('secureConnection', function(connection) {
+          checklist.check('upstream connected');
+          connection.setEncoding('utf8');
+          connection.on('data', function(data) {
+            checklist.check(data);
+            connection.removeAllListeners('data');
+            connection.on('data', function(data) {
+              checklist.check(data);
+            });
+            connection.on('end', function() {
+              checklist.check('end');
+            });
+            connection.write('Some forwarded traffic');
+          });
+        });
+        target.on('connection', function(connection) {
+          checklist.check('downstream connected');
+          connection.setEncoding('utf8');
+          connection.on('data', function(data) {
+            checklist.check(data);
+            connection.end('A forwarded response');
+          });
+        });
+        upstreamConnection.write('connect:connection-id');
+      });
+
+      after(function(done) {
+        client.disconnect(function() {
+          target.close(done);
+        });
       });
     });
 

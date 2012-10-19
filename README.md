@@ -79,10 +79,14 @@ client.connect(function(error, port) {
     // only if no errors were encountered will the <port> parameter
     // contain the public port that was assigned for the tunnel
     http.get('http://mytlstunnel.com:' + port, function(res) {
-      // should receive a response from localhost:8000 here 
-      // (if it's listening of course)
-      client.disconnect(function() {
-        // client should have ended all connections
+      res.on('data', function() {
+        // should receive the response from localhost:8000 here 
+        // (if it's listening of course)
+      });
+      res.on('end', function() {
+        client.disconnect(function() {
+          // client should have ended all connections
+        });
       });
     });
   }
@@ -99,8 +103,8 @@ It should be noted that for the client to authorize server certificates they nee
 
 - Client should support redirecting to hosts other than localhost in case the target server cannot run the client but is still inside the private zone
 - Test keys and certs need to be generated when running tests as they will eventually expire
+- Tunnel should support TLS and HTTPS traffic
 - Client should be configurable to only accept a limited number of connections
-- Tunnel should supprt TLS and HTTPS traffic
 - Server or client should be runnable from the shell
 
 ## Contributing

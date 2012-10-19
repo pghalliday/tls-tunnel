@@ -77,7 +77,10 @@ function Client(options) {
               });
             });
             connection.on('error', function() {
-              // TODO: errors should be reported back to the server
+              // TODO: errors should be reported back to
+              // the server? Or just let the connection 
+              // request timeout?
+              
               // TODO: remove this error listener on successful connection?
             });
           } else {
