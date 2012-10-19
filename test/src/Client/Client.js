@@ -19,7 +19,36 @@ var HOST = '127.0.0.1',
     UNKNOWN_CLIENT_CERT = fs.readFileSync('./test/keys/unknown-client-cert.pem');
 
 describe('Client', function() {
-  it('should timeout if the server does not respond to an open request', function(done) {
+  it('should timeout if the server does not respond to an open request after the 2 seconds by default', function(done) {
+    this.timeout(3000);
+    var checklist = new Checklist([(new Error('Open request timed out')).toString(), 'closed'], done);
+    var server = tls.createServer({
+      key: SERVER_KEY,
+      cert: SERVER_CERT,
+      requestCert: true,
+      rejectUnauthorized: true,
+      ca: [CLIENT_CERT]
+    });
+    server.listen(PORT, function() {
+      var client = new Client({
+        host: HOST,
+        port: PORT,
+        key: CLIENT_KEY,
+        cert: CLIENT_CERT,
+        ca: [SERVER_CERT],
+        targetPort: TARGET_PORT
+      });
+      client.connect(function(error, port) {
+        checklist.check(error.toString());
+        server.close(function() {
+          checklist.check('closed');
+        });
+      });
+    });
+  });
+
+  it('should timeout if the server does not respond to an open request after the configured time', function(done) {
+    this.timeout(1000);
     var checklist = new Checklist([(new Error('Open request timed out')).toString(), 'closed'], done);
     var server = tls.createServer({
       key: SERVER_KEY,
@@ -36,7 +65,7 @@ describe('Client', function() {
         cert: CLIENT_CERT,
         ca: [SERVER_CERT],
         targetPort: TARGET_PORT,
-        timeout: 100
+        timeout: 500
       });
       client.connect(function(error, port) {
         checklist.check(error.toString());

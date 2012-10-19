@@ -91,7 +91,8 @@ describe('Operator', function() {
     upstreamDuplexPipe.upstream.write('This is a test');
   });
 
-  it('should timeout after the configured period when requesting downstream connections', function(done) {
+  it('should timeout after 2 seconds by default when requesting downstream connections', function(done) {
+    this.timeout(3000);
     var mockSecureServer = new EventEmitter();
     var mockServer = new EventEmitter();
     mockServer.getConnectionString = function() {
@@ -102,7 +103,41 @@ describe('Operator', function() {
         callback(null, mockServer);
       }
     };
-    var operator = new Operator(mockSecureServer, mockSwitchboard, 100);
+    var operator = new Operator(mockSecureServer, mockSwitchboard);
+    var downstreamControlDuplexPipe = new DuplexPipe();
+    var downstreamDuplexPipe = new DuplexPipe();
+    var upstreamDuplexPipe = new DuplexPipe();
+    var checklist = new Checklist(['open', 'connect', 'end'], done);
+    downstreamControlDuplexPipe.downstream.once('data', function(data) {
+      expect(data).to.equal('open:success:ConnectionString');
+      checklist.check('open');
+      downstreamControlDuplexPipe.downstream.on('data', function(data) {
+        expect(data).to.match(/^connect:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/, 'connect string shouold containa valid UUID v1');
+        checklist.check('connect');
+      });
+    });
+    mockSecureServer.emit('secureConnection', downstreamControlDuplexPipe.upstream);
+    downstreamControlDuplexPipe.downstream.write('open');
+    upstreamDuplexPipe.upstream.on('end', function() {
+      checklist.check('end');
+    });
+    mockServer.emit('connection', upstreamDuplexPipe.downstream);
+    upstreamDuplexPipe.upstream.write('This is a test');
+  });
+
+  it('should timeout after the configured period when requesting downstream connections', function(done) {
+    this.timeout(1000);
+    var mockSecureServer = new EventEmitter();
+    var mockServer = new EventEmitter();
+    mockServer.getConnectionString = function() {
+      return 'ConnectionString';
+    };
+    var mockSwitchboard = {
+      startServer: function(callback) {
+        callback(null, mockServer);
+      }
+    };
+    var operator = new Operator(mockSecureServer, mockSwitchboard, 500);
     var downstreamControlDuplexPipe = new DuplexPipe();
     var downstreamDuplexPipe = new DuplexPipe();
     var upstreamDuplexPipe = new DuplexPipe();

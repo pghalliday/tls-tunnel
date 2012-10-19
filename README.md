@@ -43,7 +43,7 @@ var server = new Server({
     start: 8081,	// Start of port range to assign to connecting clients
     count: 10		// maximum number of ports and hence clients that can be supported
   },
-  timeout: 5000	// Timeout in milliseconds to use when waiting for a client to provide a tunnel connection
+  timeout: 5000	// Timeout in milliseconds to use when waiting for a client to provide a tunnel connection (default is 2000)
 });
 
 server.start(function() {
@@ -68,7 +68,7 @@ var client = new Client({
   cert: fs.readFileSync('./keys/client-cert.pem'),	// client's SSL certificate
   ca: [fs.readFileSync('./keys/server-cert.pem')],	// list of authorized server SSL certificates
   targetPort: 8000,	// the local port to expose through the tunnel
-  timeout: 5000	// Timeout in milliseconds to use when waiting for a server to assign a public port
+  timeout: 5000	// Timeout in milliseconds to use when waiting for a server to assign a public port (default is 2000)
 });
 
 client.connect(function(error, port) {

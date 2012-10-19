@@ -1,6 +1,8 @@
 var tls = require('tls'),
     net = require('net');
 
+var DEFAULT_TIMEOUT = 2000;
+
 function Client(options) {
   var self = this;
   var controlConnection;
@@ -16,14 +18,12 @@ function Client(options) {
       rejectUnauthorized: true
     }, function() {
       controlConnection.write('open');
-      if (options.timeout) {
-        var timeout = setTimeout(function() {
-          controlConnection.on('end', function() {
-            callback(new Error('Open request timed out'));
-          });
-          controlConnection.end();
-        }, options.timeout);
-      }
+      var timeout = setTimeout(function() {
+        controlConnection.on('end', function() {
+          callback(new Error('Open request timed out'));
+        });
+        controlConnection.end();
+      }, options.timeout ? options.timeout : DEFAULT_TIMEOUT);
       controlConnection.setEncoding('utf8');
       controlConnection.on('data', function(data) {
         var opened = data.match(/^open:(.*)$/);
@@ -80,7 +80,7 @@ function Client(options) {
               // TODO: errors should be reported back to
               // the server? Or just let the connection 
               // request timeout?
-              
+
               // TODO: remove this error listener on successful connection?
             });
           } else {

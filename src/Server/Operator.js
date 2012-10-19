@@ -2,6 +2,8 @@ var uuid = require('node-uuid'),
     util = require('util'),
     EventEmitter = require('events').EventEmitter;
 
+var DEFAULT_TIMEOUT = 2000;
+
 function Operator(secureServer, switchboard, timeout) {
   var self = this,
       secureConnections = [],
@@ -31,10 +33,10 @@ function Operator(secureServer, switchboard, timeout) {
               pausedConnections[id] = {
                 connection: connection,
                 connectionString: server.getConnectionString(),
-                timeout: timeout ? setTimeout(function() {
+                timeout: setTimeout(function() {
                   delete pausedConnections[id];
                   connection.end();
-                }, timeout) : timeout
+                }, timeout ? timeout : DEFAULT_TIMEOUT)
               };
               secureConnection.write('connect:' + id);
             });
