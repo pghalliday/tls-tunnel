@@ -97,9 +97,9 @@ It should be noted that for the client to authorize server certificates they nee
 
 ## Roadmap
 
-- Client should be configurable to only accept a limited number of connections
-- Client should support redirecting to hosts other than local hosts in case the target server cannot run the client but is still inside the private zone
+- Client should support redirecting to hosts other than localhost in case the target server cannot run the client but is still inside the private zone
 - Test keys and certs need to be generated when running tests as they will eventually expire
+- Client should be configurable to only accept a limited number of connections
 - Tunnel should supprt TLS and HTTPS traffic
 - Server or client should be runnable from the shell
 
