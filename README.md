@@ -107,6 +107,7 @@ It should be noted that for the client to authorize server certificates they nee
 
 ## Roadmap
 
+- Server should support other kinds of switchboard so that it no longer requires more than one port
 - Test keys and certs need to be generated when running tests as they will eventually expire
 - Tunnel should support TLS and HTTPS traffic
 - Client should be configurable to only accept a limited number of connections
