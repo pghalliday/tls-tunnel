@@ -1,7 +1,7 @@
 {
   "name": "tls-tunnel",
   "description": "A Server and client for proxying local ports through public interfaces",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "homepage": "https://github.com/pghalliday/node-tls-tunnel",
   "author": {
     "name": "Peter Halliday",
