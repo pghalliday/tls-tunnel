@@ -2,7 +2,7 @@ var expect = require('chai').expect,
     Client = require('../../').Client,
     Server = require('../../').Server,
     fs = require('fs'),
-    Checklist = require('../../src/util/test/Checklist'),
+    Checklist = require('checklist'),
     net = require('net');
 
 var HOST = '127.0.0.1',

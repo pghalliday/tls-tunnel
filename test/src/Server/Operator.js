@@ -1,7 +1,7 @@
 var expect = require('chai').expect,
     Operator = require('../../../src/Server/Operator'),
     EventEmitter = require('events').EventEmitter,
-    Checklist = require('../../../src/util/test/Checklist'),
+    Checklist = require('checklist'),
     DuplexPipe = require('../../../src/util/test/DuplexPipe');
        
 describe('Operator', function() {  
