@@ -14,20 +14,17 @@ The idea is simple.
 
 ## Features
 
-- Server or client can be instantiated within a Node.js context
-- Server can be configured to only accept connections from known clients (using SSL certificates), preventing strangers using your resources
-- Client can be configured to validate against a known list of servers (using SSL certificates), preventing anyone from masquerading as your server
-- Server can be configured to expose a predefined set of ports
+- Can be used to tunnel HTTP or raw sockets
+- Servers and clients can be instantiated within Node.js contexts
+- Servers can be configured to only accept connections from known clients (using SSL certificates), preventing strangers using your resources
+- Clients can be configured to validate against a known list of servers (using SSL certificates), preventing anyone from masquerading as your server
+- Servers can be configured to expose a predefined set of ports
 
 ## Installation
 
 ```
 npm install tls-tunnel
 ```
-
-## CLI
-
-**TODO**
 
 ## API
 
@@ -100,15 +97,11 @@ It should be noted that for the client to authorize server certificates they nee
 
 ## Roadmap
 
-- Tunnel should be protocol agnostic
-	- I thought this would be a given but currently
-		- Net connections work
-		- HTTP works
-		- TLS connections partially work
-		- HTTPS does not work
-- Server or client should be runnable from the shell
 - Client should be configurable to only accept a limited number of connections
+- Client should support redirecting to hosts other than local hosts in case the target server cannot run the client but is still inside the private zone
 - Test keys and certs need to be generated when running tests as they will eventually expire
+- Tunnel should supprt TLS and HTTPS traffic
+- Server or client should be runnable from the shell
 
 ## Contributing
 In lieu of a formal styleguide, take care to maintain the existing coding style. Add unit tests for any new or changed functionality. Lint and test your code using ``./grunt.sh`` or ``.\grunt.bat``.
