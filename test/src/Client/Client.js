@@ -9,6 +9,7 @@ var expect = require('chai').expect,
 var HOST = '127.0.0.1',
     PORT = 8080,
     TARGET_PORT = 8000,
+    TARGET_HOST = 'localhost',
     SERVER_KEY = fs.readFileSync('./test/keys/server-key.pem'),
     SERVER_CERT = fs.readFileSync('./test/keys/server-cert.pem'),
     CLIENT_KEY = fs.readFileSync('./test/keys/client-key.pem'),
@@ -31,12 +32,17 @@ describe('Client', function() {
     });
     server.listen(PORT, function() {
       var client = new Client({
-        host: HOST,
-        port: PORT,
-        key: CLIENT_KEY,
-        cert: CLIENT_CERT,
-        ca: [SERVER_CERT],
-        targetPort: TARGET_PORT
+        tunnel: {
+          host: HOST,
+          port: PORT,
+          key: CLIENT_KEY,
+          cert: CLIENT_CERT,
+          ca: [SERVER_CERT]
+        },
+        target: {
+          host: TARGET_HOST,
+          port: TARGET_PORT
+        } 
       });
       client.connect(function(error, port) {
         checklist.check(error.toString());
@@ -59,12 +65,17 @@ describe('Client', function() {
     });
     server.listen(PORT, function() {
       var client = new Client({
-        host: HOST,
-        port: PORT,
-        key: CLIENT_KEY,
-        cert: CLIENT_CERT,
-        ca: [SERVER_CERT],
-        targetPort: TARGET_PORT,
+        tunnel: {
+          host: HOST,
+          port: PORT,
+          key: CLIENT_KEY,
+          cert: CLIENT_CERT,
+          ca: [SERVER_CERT]
+        },
+        target: {
+          host: TARGET_HOST,
+          port: TARGET_PORT
+        },
         timeout: 500
       });
       client.connect(function(error, port) {
@@ -103,12 +114,17 @@ describe('Client', function() {
         });
       });
       var client = new Client({
-        host: HOST,
-        port: PORT,
-        key: CLIENT_KEY,
-        cert: CLIENT_CERT,
-        ca: [SERVER_CERT],
-        targetPort: TARGET_PORT,
+        tunnel: {
+          host: HOST,
+          port: PORT,
+          key: CLIENT_KEY,
+          cert: CLIENT_CERT,
+          ca: [SERVER_CERT]
+        },
+        target: {
+          host: TARGET_HOST,
+          port: TARGET_PORT
+        },
         timeout: 5000
       });
       client.connect(function(error, connectionString) {
@@ -131,12 +147,17 @@ describe('Client', function() {
         });
       });
       var client = new Client({
-        host: HOST,
-        port: PORT,
-        key: CLIENT_KEY,
-        cert: CLIENT_CERT,
-        ca: [SERVER_CERT],
-        targetPort: TARGET_PORT,
+        tunnel: {
+          host: HOST,
+          port: PORT,
+          key: CLIENT_KEY,
+          cert: CLIENT_CERT,
+          ca: [SERVER_CERT]
+        },
+        target: {
+          host: TARGET_HOST,
+          port: TARGET_PORT
+        },
         timeout: 5000
       });
       client.connect(function(error, connectionString) {
@@ -149,12 +170,17 @@ describe('Client', function() {
       var target = net.createServer();
       var upstreamConnection;
       var client = new Client({
-        host: HOST,
-        port: PORT,
-        key: CLIENT_KEY,
-        cert: CLIENT_CERT,
-        ca: [SERVER_CERT],
-        targetPort: TARGET_PORT,
+        tunnel: {
+          host: HOST,
+          port: PORT,
+          key: CLIENT_KEY,
+          cert: CLIENT_CERT,
+          ca: [SERVER_CERT]
+        },
+        target: {
+          host: TARGET_HOST,
+          port: TARGET_PORT
+        },
         timeout: 5000
       });
 

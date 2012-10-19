@@ -6,12 +6,17 @@ var expect = require('chai').expect,
 describe ('Protocol', function() {
   var port;
   var client = new Client({
-    host: '127.0.0.1',
-    port: 8080,
-    key: fs.readFileSync('./test/keys/client-key.pem'),
-    cert: fs.readFileSync('./test/keys/client-cert.pem'),
-    ca: [fs.readFileSync('./test/keys/server-cert.pem')],
-    targetPort: 8000,
+    tunnel: {
+      host: '127.0.0.1',
+      port: 8080,
+      key: fs.readFileSync('./test/keys/client-key.pem'),
+      cert: fs.readFileSync('./test/keys/client-cert.pem'),
+      ca: [fs.readFileSync('./test/keys/server-cert.pem')]
+    },
+    target: {
+      host: 'localhost',
+      port: 8000
+    },
     timeout: 5000
   });
 

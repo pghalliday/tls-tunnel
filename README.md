@@ -62,12 +62,17 @@ var http = require('http');
 var Client = require('tls-tunnel').Client;
 
 var client = new Client({
-  host: 'mytlstunnel.com',	// the host where the server is running
-  port: 8080,				// the port on which the server is running
-  key: fs.readFileSync('./keys/client-key.pem'), 	// client's private key
-  cert: fs.readFileSync('./keys/client-cert.pem'),	// client's SSL certificate
-  ca: [fs.readFileSync('./keys/server-cert.pem')],	// list of authorized server SSL certificates
-  targetPort: 8000,	// the local port to expose through the tunnel
+  tunnel: {
+    host: 'mytlstunnel.com',  // the host where the server is running
+    port: 8080,               // the port on which the server is running
+    key: fs.readFileSync('./keys/client-key.pem'),    // client's private key
+    cert: fs.readFileSync('./keys/client-cert.pem'),  // client's SSL certificate
+    ca: [fs.readFileSync('./keys/server-cert.pem')]   // list of authorized server SSL certificates
+  },
+  target: {
+    host: 'localhost',  // the target host to expose through the tunnel
+    port: 8000,         // the target port to expose through the tunnel
+  },
   timeout: 5000	// Timeout in milliseconds to use when waiting for a server to assign a public port (default is 2000)
 });
 

@@ -10,11 +10,11 @@ function Client(options) {
 
   self.connect = function(callback) {
     controlConnection = tls.connect({
-      host: options.host,
-      port: options.port,
-      key: options.key,
-      cert: options.cert,
-      ca: options.ca,
+      host: options.tunnel.host,
+      port: options.tunnel.port,
+      key: options.tunnel.key,
+      cert: options.tunnel.cert,
+      ca: options.tunnel.ca,
       rejectUnauthorized: true
     }, function() {
       controlConnection.write('open');
@@ -50,15 +50,16 @@ function Client(options) {
           if (connected) {
             // TODO: enforce a connection limit?
             var connection = net.connect({
-              port: options.targetPort
+              host: options.target.host,
+              port: options.target.port
             }, function() {
               // TODO: handle inactive timeouts and other errors?
               var secureConnection = tls.connect({
-                host: options.host,
-                port: options.port,
-                key: options.key,
-                cert: options.cert,
-                ca: options.ca,
+                host: options.tunnel.host,
+                port: options.tunnel.port,
+                key: options.tunnel.key,
+                cert: options.tunnel.cert,
+                ca: options.tunnel.ca,
                 rejectUnauthorized: true
               }, function() {
                 // TODO: handle inactive timeouts and other errors?

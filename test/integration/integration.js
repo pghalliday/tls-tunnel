@@ -7,6 +7,7 @@ var expect = require('chai').expect,
 
 var HOST = '127.0.0.1',
     PORT = 8080,
+    TARGET_HOST = 'localhost',
     TARGET_PORT = 8000,
     SERVER_KEY = fs.readFileSync('./test/keys/server-key.pem'),
     SERVER_CERT = fs.readFileSync('./test/keys/server-cert.pem'),
@@ -42,12 +43,17 @@ describe('Server and Client', function() {
   it('should error when trying to connect to a server with an incorrect server certificate', function(done) {
     var checklist = new Checklist([(new Error('DEPTH_ZERO_SELF_SIGNED_CERT')).toString()], done);
     var client = new Client({
-      host: HOST,
-      port: PORT,
-      key: CLIENT_KEY,
-      cert: CLIENT_CERT,
-      ca: [UNKNOWN_SERVER_CERT],
-      targetPort: TARGET_PORT,
+      tunnel: {
+        host: HOST,
+        port: PORT,
+        key: CLIENT_KEY,
+        cert: CLIENT_CERT,
+        ca: [UNKNOWN_SERVER_CERT]
+      },
+      target: {
+        host: TARGET_HOST,
+        port: TARGET_PORT
+      },
       timeout: 5000
     });
     client.connect(function(error, port) {
@@ -58,12 +64,17 @@ describe('Server and Client', function() {
   it('should error when trying to connect to a server with an incorrect client certificate', function(done) {
     var checklist = new Checklist(['Error: socket hang up'], done);
     var client = new Client({
-      host: HOST,
-      port: PORT,
-      key: UNKNOWN_CLIENT_KEY,
-      cert: UNKNOWN_CLIENT_CERT,
-      ca: [SERVER_CERT],
-      targetPort: TARGET_PORT,
+      tunnel: {
+        host: HOST,
+        port: PORT,
+        key: UNKNOWN_CLIENT_KEY,
+        cert: UNKNOWN_CLIENT_CERT,
+        ca: [SERVER_CERT]
+      },
+      target: {
+        host: TARGET_HOST,
+        port: TARGET_PORT
+      },
       timeout: 5000
     });
     client.connect(function(error, port) {
@@ -80,12 +91,17 @@ describe('Server and Client', function() {
       targetServer = net.createServer();
       targetServer.listen(TARGET_PORT, function() {
         client = new Client({
-          host: HOST,
-          port: PORT,
-          key: CLIENT_KEY,
-          cert: CLIENT_CERT,
-          ca: [SERVER_CERT],
-          targetPort: TARGET_PORT,
+          tunnel: {
+            host: HOST,
+            port: PORT,
+            key: CLIENT_KEY,
+            cert: CLIENT_CERT,
+            ca: [SERVER_CERT]
+          },
+          target: {
+            host: TARGET_HOST,
+            port: TARGET_PORT
+          },
           timeout: 5000
         });
         client.connect(function(error, port) {
