@@ -15,6 +15,7 @@ The idea is simple.
 ## Features
 
 - Can be used to tunnel HTTP or raw sockets
+- Can specify any host and port to forward to that is reachable by the client
 - Servers and clients can be instantiated within Node.js contexts
 - Servers can be configured to only accept connections from known clients (using SSL certificates), preventing strangers using your resources
 - Clients can be configured to validate against a known list of servers (using SSL certificates), preventing anyone from masquerading as your server
@@ -106,7 +107,6 @@ It should be noted that for the client to authorize server certificates they nee
 
 ## Roadmap
 
-- Client should support redirecting to hosts other than localhost in case the target server cannot run the client but is still inside the private zone
 - Test keys and certs need to be generated when running tests as they will eventually expire
 - Tunnel should support TLS and HTTPS traffic
 - Client should be configurable to only accept a limited number of connections
