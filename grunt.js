@@ -1,6 +1,7 @@
 module.exports = function(grunt) {
 
   grunt.loadNpmTasks('grunt-mocha-test');
+  grunt.loadNpmTasks('grunt-shell');
 
   function getLintConfig() {
     return {
@@ -64,6 +65,19 @@ module.exports = function(grunt) {
         }
       }
     },
+    shell: {
+      generateKeys: {
+        command: (process.platform === 'win32') ? './keys.bat' : './keys.sh',
+        execOptions: {
+          cwd: './test/keys'
+        }
+      },
+      _options: {
+        stdout: true,
+        stderr: true,
+        failOnError: true
+      },
+    },
     watch: {
       files: ['grunt.js', 'src/**/*.js', 'test/src/**/*.js', 'test/integration/**/*.js'],
       tasks: ['default']
@@ -71,7 +85,7 @@ module.exports = function(grunt) {
   });
 
   // Default task.
-  grunt.registerTask('default', 'lint mochaTest:test');
+  grunt.registerTask('default', 'lint shell:generateKeys mochaTest:test');
 
   // Documentation task.
   grunt.registerTask('doc', 'mochaTest:doc');
