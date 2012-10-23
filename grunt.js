@@ -67,7 +67,7 @@ module.exports = function(grunt) {
     },
     shell: {
       generateKeys: {
-        command: (process.platform === 'win32') ? './keys.bat' : './keys.sh',
+        command: (process.platform === 'win32') ? '.\\keys.bat' : './keys.sh',
         execOptions: {
           cwd: './test/keys'
         }

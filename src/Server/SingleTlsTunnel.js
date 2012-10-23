@@ -3,7 +3,7 @@ var tls = require('tls'),
     net = require('net'),
     Multiplex = require('../util/Multiplex');
 
-function SingleTlsTunnel(tlsOptions) {
+function SingleTlsTunnel(options) {
   var self = this,
       multiplex,
       clientConnected = false;
@@ -14,13 +14,13 @@ function SingleTlsTunnel(tlsOptions) {
       // negotiate a secure session
       var securePair = tls.createSecurePair(
         crypto.createCredentials({
-          key: tlsOptions.key,
-          cert: tlsOptions.cert,
-          ca: tlsOptions.ca
+          key: options.key,
+          cert: options.cert,
+          ca: options.ca
         }),
         true,
-        tlsOptions.requireCert,
-        tlsOptions.rejectUnauthorized
+        options.requireCert,
+        options.rejectUnauthorized
       );
       var cleartext = securePair.cleartext,
           encrypted = securePair.encrypted;
