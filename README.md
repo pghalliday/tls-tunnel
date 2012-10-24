@@ -1,5 +1,5 @@
-node-tls-tunnel
-===============
+tls-tunnel
+==========
 
 A Node.js client/server implementation of a secure tunnel over TLS/SSL. Useful for exposing local servers on public hosts. Initially implemented to expose a local server to browsers provided by [BrowserStack](http://www.browserstack.com) to integrate their beta API with test scripts.
 
