@@ -3,7 +3,7 @@ var expect = require('chai').expect,
     fs = require('fs'),
     net = require('net'),
     Checklist = require('checklist'),
-    Multiplex = require('../../../src/util/Multiplex'),
+    MultiplexStream = require('multiplex-stream'),
     SingleTlsTunnel = require('../../../src/Server/SingleTlsTunnel');
 
 var PORT = 8080,
@@ -51,7 +51,7 @@ describe('SingleTlsTunnel', function() {
     before(function(done) {
       server.listen(PORT, function() {
         client = tls.connect(CLIENT_OPTIONS, function() {
-          multiplex = new Multiplex();
+          multiplex = new MultiplexStream();
           client.pipe(multiplex).pipe(client);
           done();
         });

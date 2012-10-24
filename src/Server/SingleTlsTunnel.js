@@ -1,7 +1,7 @@
 var tls = require('tls'),
     crypto = require('crypto'),
     net = require('net'),
-    Multiplex = require('../util/Multiplex');
+    MultiplexStream = require('multiplex-stream');
 
 function SingleTlsTunnel(options) {
   var self = this,
@@ -25,7 +25,7 @@ function SingleTlsTunnel(options) {
       var cleartext = securePair.cleartext,
           encrypted = securePair.encrypted;
       
-      multiplex = new Multiplex();
+      multiplex = new MultiplexStream();
       connection.pipe(encrypted).pipe(connection);
       cleartext.pipe(multiplex).pipe(cleartext);
       
