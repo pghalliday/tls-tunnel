@@ -2,7 +2,7 @@ var expect = require('chai').expect,
     Operator = require('../../../src/Server/Operator'),
     EventEmitter = require('events').EventEmitter,
     Checklist = require('checklist'),
-    Tunnel = require('../../../src/util/Tunnel');
+    Tunnel = require('tunnel-stream');
        
 describe('Operator', function() {  
   it('should respond to open requests with the success responses from the switchboard and emit an open event', function(done) {
@@ -22,6 +22,7 @@ describe('Operator', function() {
     operator.on('open', function(connectionString) {
       checklist.check(connectionString);
     });
+    tunnel.downstream.setEncoding();
     tunnel.downstream.on('data', function(data) {
       checklist.check(data);
     });
@@ -39,6 +40,7 @@ describe('Operator', function() {
     var operator = new Operator(mockSecureServer, mockSwitchboard);
     var tunnel = new Tunnel();
     var checklist = new Checklist(['end', 'data'], done);
+    tunnel.downstream.setEncoding();
     tunnel.downstream.on('data', function(data) {
       expect(data).to.equal('open:error:Something went wrong');
       checklist.check('data');
@@ -69,6 +71,7 @@ describe('Operator', function() {
     operator.on('connect', function(connectionString) {
       checklist.check(connectionString);
     });
+    downstreamControlTunnel.downstream.setEncoding();
     downstreamControlTunnel.downstream.once('data', function(data) {
       expect(data).to.equal('open:success:ConnectionString');
       checklist.check('open');
@@ -76,6 +79,7 @@ describe('Operator', function() {
         expect(data).to.match(/^connect:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/, 'connect string shouold containa valid UUID v1');
         checklist.check('connect');
         mockSecureServer.emit('secureConnection', downstreamTunnel.upstream);
+        downstreamTunnel.downstream.setEncoding();
         downstreamTunnel.downstream.on('data', function(data) {
           checklist.check(data);
         });
@@ -105,9 +109,9 @@ describe('Operator', function() {
     };
     var operator = new Operator(mockSecureServer, mockSwitchboard);
     var downstreamControlTunnel = new Tunnel();
-    var downstreamTunnel = new Tunnel();
     var upstreamTunnel = new Tunnel();
     var checklist = new Checklist(['open', 'connect', 'end'], done);
+    downstreamControlTunnel.downstream.setEncoding();
     downstreamControlTunnel.downstream.once('data', function(data) {
       expect(data).to.equal('open:success:ConnectionString');
       checklist.check('open');
@@ -139,9 +143,9 @@ describe('Operator', function() {
     };
     var operator = new Operator(mockSecureServer, mockSwitchboard, 500);
     var downstreamControlTunnel = new Tunnel();
-    var downstreamTunnel = new Tunnel();
     var upstreamTunnel = new Tunnel();
     var checklist = new Checklist(['open', 'connect', 'end'], done);
+    downstreamControlTunnel.downstream.setEncoding();
     downstreamControlTunnel.downstream.once('data', function(data) {
       expect(data).to.equal('open:success:ConnectionString');
       checklist.check('open');
@@ -179,6 +183,7 @@ describe('Operator', function() {
     };
     var operator = new Operator(mockSecureServer, mockSwitchboard);
     var tunnel = new Tunnel();
+    tunnel.downstream.setEncoding();
     tunnel.downstream.on('data', function(data) {
       expect(data).to.equal('open:success:ConnectionString');
       tunnel.downstream.end();
