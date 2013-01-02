@@ -1,6 +1,6 @@
 var expect = require('chai').expect,
     Switchboard = require('../../../src/Server/Switchboard'),
-    Range = require('../../../src/util/Range'),
+    Range = require('../../../src/Server/Range'),
     Checklist = require('checklist'),
     net = require('net');
 

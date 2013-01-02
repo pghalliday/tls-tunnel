@@ -1,5 +1,5 @@
 var expect = require('chai').expect,
-    Range = require('../../../src/util/Range');
+    Range = require('../../../src/Server/Range');
     
 var START = 100,
     COUNT = 3;

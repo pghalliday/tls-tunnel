@@ -1,5 +1,5 @@
 var tls = require('tls'),
-    Range = require('../util/Range'),
+    Range = require('./Range'),
     Switchboard = require('./Switchboard'),
     Operator = require('./Operator'),
     util = require('util'),
