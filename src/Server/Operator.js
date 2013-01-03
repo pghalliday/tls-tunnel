@@ -1,5 +1,4 @@
-var uuid = require('node-uuid'),
-    util = require('util'),
+var util = require('util'),
     EventEmitter = require('events').EventEmitter;
 
 function Operator(secureServer, switchboard) {

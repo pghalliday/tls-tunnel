@@ -14,7 +14,7 @@ The idea is simple.
 
 ## Features
 
-- Can be used to tunnel HTTP or raw sockets
+- Can be used to tunnel HTTP, HTTPS or raw or TLS sockets
 - Can specify any host and port to forward to that is reachable by the client
 - Servers and clients can be instantiated within Node.js contexts
 - Servers can be configured to only accept connections from known clients (using SSL certificates), preventing strangers using your resources
@@ -107,7 +107,6 @@ It should be noted that for the client to authorize server certificates they nee
 ## Roadmap
 
 - Server should support other kinds of switchboard so that it no longer requires more than one port
-- Tunnel should support TLS and HTTPS traffic
 - Client should be configurable to only accept a limited number of connections
 - Server or client should be runnable from the shell
 

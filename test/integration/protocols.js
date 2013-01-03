@@ -105,7 +105,7 @@ describe ('Protocol', function() {
     // because the socket is paused and resumed during negotiation
     // or something. Maybe I can implement a better pause and resume
     // flow control mechanism
-    it.skip('should be supported', function(done) {
+    it('should be supported', function(done) {
       var tlsServer = tls.createServer({
         key: fs.readFileSync('./test/keys/unknown-server-key.pem'),
         cert: fs.readFileSync('./test/keys/unknown-server-cert.pem'),
@@ -150,7 +150,7 @@ describe ('Protocol', function() {
     // because the socket is paused and resumed during negotiation
     // or something. Maybe I can implement a better pause and resume
     // flow control mechanism
-    it.skip('should be supported', function(done) {
+    it('should be supported', function(done) {
       var httpsServer = https.createServer({
         key: fs.readFileSync('./test/keys/unknown-server-key.pem'),
         cert: fs.readFileSync('./test/keys/unknown-server-cert.pem'),
