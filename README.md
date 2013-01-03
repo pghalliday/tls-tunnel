@@ -43,8 +43,7 @@ var server = new Server({
   forwardedPorts: {
     start: 8081,	// Start of port range to assign to connecting clients
     count: 10		// maximum number of ports and hence clients that can be supported
-  },
-  timeout: 5000	// Timeout in milliseconds to use when waiting for a client to provide a tunnel connection (default is 2000)
+  }
 });
 
 server.start(function() {
@@ -108,7 +107,6 @@ It should be noted that for the client to authorize server certificates they nee
 ## Roadmap
 
 - Server should support other kinds of switchboard so that it no longer requires more than one port
-- Test keys and certs need to be generated when running tests as they will eventually expire
 - Tunnel should support TLS and HTTPS traffic
 - Client should be configurable to only accept a limited number of connections
 - Server or client should be runnable from the shell

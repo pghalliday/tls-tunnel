@@ -3,7 +3,8 @@ var expect = require('chai').expect,
     tls = require('tls'),
     fs = require('fs'),
     net = require('net'),
-    Checklist = require('checklist');
+    Checklist = require('checklist'),
+    Client = require('single-tls-tunnel').Client;
 
 var PORT = 8080,
     SERVER_KEY = fs.readFileSync('./test/keys/server-key.pem'),
@@ -23,8 +24,16 @@ var SERVER_OPTIONS = {
   forwardedPorts: {
     start: START_PORT,
     count: PORT_LIMIT
-  },
-  timeout: 5000
+  }
+};
+
+var CLIENT_OPTIONS = {
+  host: 'localhost',
+  port: 0,
+  key: CLIENT_KEY,
+  cert:CLIENT_CERT,
+  ca: [SERVER_CERT],
+  rejectUnauthorized: true
 };
 
 describe('Server', function() {
@@ -174,7 +183,6 @@ describe('Server', function() {
 
     describe('and connected', function() {
       var connection;
-      var forwardedPort;
       
       before(function(done) {
         connection = tls.connect({
@@ -185,40 +193,19 @@ describe('Server', function() {
           connection.write('open');
           connection.setEncoding('utf8');
           connection.once('data', function(data) {
-            forwardedPort = parseInt(data.substring('open:success:'.length), 10);
+            CLIENT_OPTIONS.port = parseInt(data.substring('open:success:'.length), 10);
             done();
           });
         });
       });
       
-      it('should accept unencrypted connections to the forwarded port, emit a connect event and send data to the target', function(done) {
-        var checklist = new Checklist([forwardedPort,'This is a testThis is also a test'], done);
-        server.once('connect', function(port) {
-          checklist.check(port);
+      it('should accept a single-tls-tunnel client connection on the forwarded port', function(done) {
+        var client = new Client(CLIENT_OPTIONS, {
+          host: 'localhost',
+          port: 8000
         });
-        var dataConnection;
-        var client = net.connect({
-          port: forwardedPort
-        }, function() {
-          connection.on('data', function(data) {
-            var dataConnection = tls.connect({
-              port: PORT,
-              key: CLIENT_KEY,
-              cert: CLIENT_CERT
-            }, function() {
-              var allData = '';
-              dataConnection.setEncoding('utf8');
-              dataConnection.on('data', function(data) {
-                allData += data;
-              });
-              dataConnection.on('end', function() {
-                checklist.check('This is a testThis is also a test');
-              });
-              dataConnection.write(data);
-            });
-          });
-          client.write('This is a test');
-          client.end('This is also a test');
+        client.connect(function() {
+          done();
         });
       });
       

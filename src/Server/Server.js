@@ -1,5 +1,4 @@
 var tls = require('tls'),
-    Range = require('./Range'),
     Switchboard = require('./Switchboard'),
     Operator = require('./Operator'),
     util = require('util'),
@@ -18,8 +17,8 @@ function Server(options) {
 		ca: options.ca
 	});
 
-  var switchboard = new Switchboard(new Range(options.forwardedPorts.start, options.forwardedPorts.count));
-  var operator = new Operator(secureServer, switchboard, options.timeout);
+  var switchboard = new Switchboard(options);
+  var operator = new Operator(secureServer, switchboard);
   operator.on('open', function(connectionString) {
     self.emit('open', parseInt(connectionString, 10));
   });

@@ -111,25 +111,6 @@ describe('Server and Client', function() {
       });
     });
 
-    it('should open a new secure connection when connections are made on the forwarded port and a new connection to the target server', function(done) {
-      var checklist = new Checklist(['connect', 'end', 'connection'], done);
-      server.once('connect', function() {
-        checklist.check('connect');
-      });
-      targetServer.once('connection', function(connection) {
-        checklist.check('connection');
-      });
-      var connection = net.connect({
-        host: HOST,
-        port: forwardedPort
-      }, function() {
-        connection.on('end', function() {
-          checklist.check('end');
-        });
-        connection.end();
-      });
-    });
-
     describe('and a connection is made to the forwarded port', function() {
       var forwardedConnection;
       var targetConnection;

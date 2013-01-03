@@ -2,12 +2,9 @@ var uuid = require('node-uuid'),
     util = require('util'),
     EventEmitter = require('events').EventEmitter;
 
-var DEFAULT_TIMEOUT = 2000;
-
-function Operator(secureServer, switchboard, timeout) {
+function Operator(secureServer, switchboard) {
   var self = this,
-      secureConnections = [],
-      pausedConnections = {};
+      secureConnections = [];
 
   secureServer.on('secureConnection', function(secureConnection) {
     secureConnections.push(secureConnection);
@@ -17,6 +14,8 @@ function Operator(secureServer, switchboard, timeout) {
     secureConnection.setEncoding('utf8');
     secureConnection.once('data', function(data) {
       if (data === 'open') {
+        // TODO: pass in the peer certificate so that only the same client can connect
+        // to the started server instance
         switchboard.startServer(function(error, server) {
           if (error) {
             secureConnection.end('open:error:' + error.message);
@@ -27,39 +26,11 @@ function Operator(secureServer, switchboard, timeout) {
             });
             secureConnection.write('open:success:' + server.getConnectionString());
             self.emit('open', server.getConnectionString());
-            server.on('connection', function(connection) {
-              connection.pause();
-              var id = uuid.v1();
-              pausedConnections[id] = {
-                connection: connection,
-                connectionString: server.getConnectionString(),
-                timeout: setTimeout(function() {
-                  delete pausedConnections[id];
-                  connection.end();
-                }, timeout ? timeout : DEFAULT_TIMEOUT)
-              };
-              secureConnection.write('connect:' + id);
-            });
           }
         });
       }
       else {
-        var id = data.match(/^connect:([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/);
-        if (id) {
-          var pausedConnection = pausedConnections[id[1]];
-          if (pausedConnection) {
-            delete pausedConnections[id[1]];
-            clearTimeout(pausedConnection.timeout);
-            self.emit('connect', pausedConnection.connectionString);
-            pausedConnection.connection.pipe(secureConnection);
-            secureConnection.pipe(pausedConnection.connection);
-            pausedConnection.connection.resume();
-          } else {
-            secureConnection.end();
-          }
-        } else {
-          secureConnection.end();
-        }
+        secureConnection.end();
       }
     });
   });

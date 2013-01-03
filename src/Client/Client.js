@@ -1,12 +1,13 @@
 var tls = require('tls'),
-    net = require('net');
+    net = require('net'),
+    SingleTlsTunnelClient = require('single-tls-tunnel').Client;
 
 var DEFAULT_TIMEOUT = 2000;
 
 function Client(options) {
   var self = this;
   var controlConnection;
-  var secureConnections = [];
+  var singleTlsTunnelClient;
 
   self.connect = function(callback) {
     controlConnection = tls.connect({
@@ -34,7 +35,26 @@ function Client(options) {
           }
           var success = opened[1].match(/^success:(.*)$/);
           if (success) {
-            callback(null, success[1]);
+            // use single-tls-tunnel client to connect to port given
+            // in success[1]
+            var port = parseInt(success[1], 10);
+            singleTlsTunnelClient = new SingleTlsTunnelClient({
+              host: options.tunnel.host,
+              port: port,
+              key: options.tunnel.key,
+              cert: options.tunnel.cert,
+              ca: options.tunnel.ca,
+              rejectUnauthorized: true
+            }, {
+              host: options.target.host,
+              port: options.target.port
+            });
+            singleTlsTunnelClient.on('error', function(error) {
+              callback(error);
+            });
+            singleTlsTunnelClient.connect(function() {
+              callback(null, port);
+            });
           } else {
             var error = opened[1].match(/^error:(.*)$/);
             if (error) {
@@ -46,49 +66,9 @@ function Client(options) {
             }
           }
         } else {
-          var connected = data.match(/connect:(.*)/);
-          if (connected) {
-            // TODO: enforce a connection limit?
-            var connection = net.connect({
-              host: options.target.host,
-              port: options.target.port
-            }, function() {
-              // TODO: handle inactive timeouts and other errors?
-              var secureConnection = tls.connect({
-                host: options.tunnel.host,
-                port: options.tunnel.port,
-                key: options.tunnel.key,
-                cert: options.tunnel.cert,
-                ca: options.tunnel.ca,
-                rejectUnauthorized: true
-              }, function() {
-                // TODO: handle inactive timeouts and other errors?
-                secureConnections.push(secureConnection);
-                secureConnection.on('end', function() {
-                  secureConnections.splice(secureConnections.indexOf(secureConnection), 1);
-                  connection.end();
-                });
-                secureConnection.write(data);
-                secureConnection.pipe(connection);
-                connection.pipe(secureConnection);
-              });
-              secureConnection.on('error', function(error) {
-                connection.end();
-                // TODO: remove this error listener on successful connection?
-              });
-            });
-            connection.on('error', function() {
-              // TODO: errors should be reported back to
-              // the server? Or just let the connection 
-              // request timeout?
-
-              // TODO: remove this error listener on successful connection?
-            });
-          } else {
-            // TODO: should we emit an error event and end the
-            // secureConnection here - after all we expect the server
-            // to play nice
-          }
+          // TODO: should we emit an error event and end the
+          // secureConnection here - after all we expect the server
+          // to play nice
         }
       });
     });
@@ -98,13 +78,13 @@ function Client(options) {
   };
 
   self.disconnect = function(callback) {
-    secureConnections.forEach(function(secureConnection) {
-      secureConnection.end();
+    singleTlsTunnelClient.on('end', function() {
+      controlConnection.on('end', function() {
+        callback();
+      });
+      controlConnection.end();
     });
-    controlConnection.on('end', function() {
-      callback();
-    });
-    controlConnection.end();
+    singleTlsTunnelClient.end();
   };
 }
 

@@ -1,15 +1,23 @@
-var net = require('net');
+var Server = require('single-tls-tunnel').Server,
+    Range = require('./Range');
 
-function Switchboard(portRange) {
+function Switchboard(options) {
   var self = this,
-      serversAndConnections = [];
+      serversAndConnections = [],
+      portRange = new Range(options.forwardedPorts.start, options.forwardedPorts.count);
 
   self.startServer = function(callback) {
     portRange.pop(function(error, port) {
       if (error) {
         callback(new Error('No more ports available'));
       } else {
-        var server = net.createServer();
+        var server = new Server({
+          key: options.key,
+          cert: options.cert,
+          ca: options.ca, 
+          requireCert: true,
+          rejectUnauthorized: true  
+        });
         server.getConnectionString = function() {
           return '' + port;
         };

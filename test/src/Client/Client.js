@@ -1,13 +1,14 @@
 var expect = require('chai').expect,
     Client = require('../../../src/Client/Client'),
-    Server = require('../../../src/Server/Server'),
     fs = require('fs'),
     Checklist = require('checklist'),
     tls = require('tls'),
-    net = require('net');
+    net = require('net'),
+    SingleTlsTunnelServer = require('single-tls-tunnel').Server;
 
 var HOST = '127.0.0.1',
     PORT = 8080,
+    FORWARDED_PORT = 8081,
     TARGET_PORT = 8000,
     TARGET_HOST = 'localhost',
     SERVER_KEY = fs.readFileSync('./test/keys/server-key.pem'),
@@ -96,13 +97,31 @@ describe('Client', function() {
       ca: [CLIENT_CERT]
     });
 
-    before(function(done) {
-      server.listen(PORT, done);
+    var singleTlsTunnelServer = new SingleTlsTunnelServer({
+      key: SERVER_KEY,
+      cert: SERVER_CERT,
+      ca: [CLIENT_CERT], 
+      requestCert: true,
+      rejectUnauthorized: true  
     });
 
-    it('should connect to the server, send the open request and callback once the server responds correctly', function(done) {
-      var checklist = new Checklist(['connected', 'open', null, 'ConnectionString', 'disconnected'], function(error) {
+    before(function(done) {
+      server.listen(PORT, function() {
+        singleTlsTunnelServer.listen(FORWARDED_PORT, done);
+      });
+    });
+
+    it('should connect to the server, send the open request and connect to the subsequently started single-tls-tunnel instance', function(done) {
+      var checklist = new Checklist([
+        'connected', 
+        'open', 
+        'connected', 
+        null, 
+        FORWARDED_PORT, 
+        'disconnected'
+      ], function(error) {
         server.removeAllListeners('secureConnection');
+        singleTlsTunnelServer.removeAllListeners('connected');
         done(error);
       });
       server.on('secureConnection', function(connection) {
@@ -110,7 +129,7 @@ describe('Client', function() {
         connection.setEncoding('utf8');
         connection.on('data', function(data) {
           checklist.check(data);
-          connection.write('open:success:ConnectionString');
+          connection.write('open:success:' + FORWARDED_PORT);
         });
       });
       var client = new Client({
@@ -127,9 +146,12 @@ describe('Client', function() {
         },
         timeout: 5000
       });
-      client.connect(function(error, connectionString) {
+      singleTlsTunnelServer.on('connected', function() {
+        checklist.check('connected');
+      });
+      client.connect(function(error, port) {
         checklist.check(error);
-        checklist.check(connectionString);
+        checklist.check(port);
         client.disconnect(function() {
           checklist.check('disconnected');
         });
@@ -137,7 +159,10 @@ describe('Client', function() {
     });
 
     it('should handle open errors correctly', function(done) {
-      var checklist = new Checklist([(new Error('Server rejected connection: No ports available')).toString(), 'undefined'], function(error) {
+      var checklist = new Checklist([
+        (new Error('Server rejected connection: No ports available')).toString(),
+        'undefined'
+      ], function(error) {
         server.removeAllListeners('secureConnection');
         done(error);
       });
@@ -160,7 +185,7 @@ describe('Client', function() {
         },
         timeout: 5000
       });
-      client.connect(function(error, connectionString) {
+      client.connect(function(error, port) {
         checklist.check(error.toString());
         checklist.check(typeof port);
       });
@@ -168,7 +193,6 @@ describe('Client', function() {
 
     describe('and connected', function() {
       var target = net.createServer();
-      var upstreamConnection;
       var client = new Client({
         tunnel: {
           host: HOST,
@@ -185,44 +209,26 @@ describe('Client', function() {
       });
 
       before(function(done) {
-        target.listen(TARGET_PORT, function() {
-          server.on('secureConnection', function(connection) {
-            upstreamConnection = connection;
-            connection.on('data', function(data) {
-              server.removeAllListeners('secureConnection');
-              connection.write('open:success:ConnectionString');
-            });
+        server.on('secureConnection', function(connection) {
+          connection.on('data', function(data) {
+            connection.write('open:success:' + FORWARDED_PORT);
           });
+        });
+        target.listen(TARGET_PORT, function() {
           client.connect(done);
         });
       });
 
-      it('should open a connection to the target and start a new connection to the server when it receives a connect request', function(done) {
+      it('should tunnel to the target server', function(done) {
         var checklist = new Checklist([
           'upstream connected',
-          'connect:connection-id',
           'downstream connected',
           'Some forwarded traffic',
           'A forwarded response',
           'end'
         ], function(error) {
-          server.removeAllListeners('secureConnection');
+          target.removeAllListeners('connection');
           done(error);
-        });
-        server.on('secureConnection', function(connection) {
-          checklist.check('upstream connected');
-          connection.setEncoding('utf8');
-          connection.on('data', function(data) {
-            checklist.check(data);
-            connection.removeAllListeners('data');
-            connection.on('data', function(data) {
-              checklist.check(data);
-            });
-            connection.on('end', function() {
-              checklist.check('end');
-            });
-            connection.write('Some forwarded traffic');
-          });
         });
         target.on('connection', function(connection) {
           checklist.check('downstream connected');
@@ -232,7 +238,17 @@ describe('Client', function() {
             connection.end('A forwarded response');
           });
         });
-        upstreamConnection.write('connect:connection-id');
+        var connection = net.connect(FORWARDED_PORT, function() {
+          checklist.check('upstream connected');
+          connection.setEncoding('utf8');
+          connection.on('data', function(data) {
+            checklist.check(data);
+          });
+          connection.on('end', function() {
+            checklist.check('end');
+          });
+          connection.write('Some forwarded traffic');
+        });
       });
 
       after(function(done) {
@@ -243,7 +259,9 @@ describe('Client', function() {
     });
 
     after(function(done) {
-      server.close(done);
+      singleTlsTunnelServer.close(function() {
+        server.close(done);
+      });
     });
   });
 });

@@ -2,23 +2,38 @@ var expect = require('chai').expect,
     Switchboard = require('../../../src/Server/Switchboard'),
     Range = require('../../../src/Server/Range'),
     Checklist = require('checklist'),
-    net = require('net');
+    Client = require('single-tls-tunnel').Client,
+    fs = require('fs');
 
-var START_PORT = 8081,
-    PORT_COUNT = 3;
+var SERVER_KEY = fs.readFileSync('./test/keys/server-key.pem'),
+    SERVER_CERT = fs.readFileSync('./test/keys/server-cert.pem'),
+    CLIENT_KEY = fs.readFileSync('./test/keys/client-key.pem'),
+    CLIENT_CERT = fs.readFileSync('./test/keys/client-cert.pem'),
+    START_PORT = 8081,
+    PORT_LIMIT = 3;
+
+var OPTIONS = {
+  key: SERVER_KEY,
+  cert: SERVER_CERT,
+  ca: [CLIENT_CERT],
+  forwardedPorts: {
+    start: START_PORT,
+    count: PORT_LIMIT
+  }
+};
 
 describe('Switchboard', function() {
-  it('should start servers listening on ports in the given range until no more ports remain', function(done) {
-    var switchboard = new Switchboard(new Range(START_PORT, PORT_COUNT));
+  it('should start single-tls-tunnel servers listening on ports in the given range until no more ports remain', function(done) {
+    var switchboard = new Switchboard(OPTIONS);
     var servers = [];
 
     var checklist = new Checklist([
       (new Error('No more ports available')).toString(),
-      'connection:8081',
+      'connected:8081',
+      'connected:8082',
+      'connected:8083',
       'connect:8081',
-      'connection:8082',
       'connect:8082',
-      'connection:8083',
       'connect:8083'
     ], function(error) {
       expect(error).to.be.an('undefined');
@@ -37,12 +52,21 @@ describe('Switchboard', function() {
       expect(error).to.equal(null);
       expect(server.getConnectionString()).to.equal('8081');
       servers.push(server);
-      server.on('connection', function(connection) {
-        checklist.check('connection:8081');
+      var client = new Client({
+        host: 'localhost',
+        port: 8081,
+        key: CLIENT_KEY,
+        cert: CLIENT_CERT,
+        ca: [SERVER_CERT],
+        rejectUnauthorized: true
+      }, {
+        host: 'localhost',
+        port: 8000
       });
-      net.connect({
-        port: 8081
-      }, function() {
+      server.on('connected', function() {
+        checklist.check('connected:8081');
+      });
+      client.connect(function() {
         checklist.check('connect:8081');
       });
     });
@@ -51,12 +75,21 @@ describe('Switchboard', function() {
       expect(error).to.equal(null);
       expect(server.getConnectionString()).to.equal('8082');
       servers.push(server);
-      server.on('connection', function(connection) {
-        checklist.check('connection:8082');
+      var client = new Client({
+        host: 'localhost',
+        port: 8082,
+        key: CLIENT_KEY,
+        cert: CLIENT_CERT,
+        ca: [SERVER_CERT],
+        rejectUnauthorized: true
+      }, {
+        host: 'localhost',
+        port: 8000
       });
-      net.connect({
-        port: 8082
-      }, function() {
+      server.on('connected', function() {
+        checklist.check('connected:8082');
+      });
+      client.connect(function() {
         checklist.check('connect:8082');
       });
     });
@@ -65,12 +98,21 @@ describe('Switchboard', function() {
       expect(error).to.equal(null);
       expect(server.getConnectionString()).to.equal('8083');
       servers.push(server);
-      server.on('connection', function(connection) {
-        checklist.check('connection:8083');
+      var client = new Client({
+        host: 'localhost',
+        port: 8083,
+        key: CLIENT_KEY,
+        cert: CLIENT_CERT,
+        ca: [SERVER_CERT],
+        rejectUnauthorized: true
+      }, {
+        host: 'localhost',
+        port: 8000
       });
-      net.connect({
-        port: 8083
-      }, function() {
+      server.on('connected', function() {
+        checklist.check('connected:8083');
+      });
+      client.connect(function() {
         checklist.check('connect:8083');
       });
     });
@@ -81,7 +123,7 @@ describe('Switchboard', function() {
   });
 
   it('should reuse ports after servers are stopped', function(done) {
-    var switchboard = new Switchboard(new Range(START_PORT, PORT_COUNT));
+    var switchboard = new Switchboard(OPTIONS);
     switchboard.startServer(function(error, server1) {
       expect(error).to.equal(null);
       expect(server1.getConnectionString()).to.equal('8081');
@@ -92,20 +134,6 @@ describe('Switchboard', function() {
           switchboard.stopServer(server2, function() {
             done();
           });
-        });
-      });
-    });
-  });
-
-  it('should be possible to start and stop a server independently', function(done) {
-    var switchboard = new Switchboard(new Range(START_PORT, PORT_COUNT));
-    switchboard.startServer(function(error, server) {
-      expect(error).to.equal(null);
-      net.connect({
-        port: 8081
-      }, function() {
-        switchboard.stopServer(server, function() {
-          done();
         });
       });
     });
