@@ -28,8 +28,7 @@ describe ('Protocol', function() {
     forwardedPorts: {
       start: 8081,
       count: 10
-    },
-    timeout: 5000
+    }
   });
 
   before(function(done) {
@@ -101,10 +100,6 @@ describe ('Protocol', function() {
   describe('TLS', function() {
     var tls = require('tls');
 
-    // TODO: Gah, why doesn't this work! ... hmm, I think it's
-    // because the socket is paused and resumed during negotiation
-    // or something. Maybe I can implement a better pause and resume
-    // flow control mechanism
     it('should be supported', function(done) {
       var tlsServer = tls.createServer({
         key: fs.readFileSync('./test/keys/unknown-server-key.pem'),
@@ -146,10 +141,6 @@ describe ('Protocol', function() {
   describe('HTTPS', function() {
     var https = require('https');
 
-    // TODO: Gah, why doesn't this work! ... hmm, I think it's
-    // because the socket is paused and resumed during negotiation
-    // or something. Maybe I can implement a better pause and resume
-    // flow control mechanism
     it('should be supported', function(done) {
       var httpsServer = https.createServer({
         key: fs.readFileSync('./test/keys/unknown-server-key.pem'),
@@ -168,6 +159,56 @@ describe ('Protocol', function() {
             httpsServer.close(done);
           });
         });
+      });
+    });
+  });
+
+  describe('SSH', function() {
+    var prompt = require('prompt');
+
+    it('should be supported', function(done) {
+      var timeout = 30;
+      this.timeout(1000 * timeout);
+      // TODO: instead of creating a new client to forward to
+      // an existing SSH server it would be better if we started
+      // an SSH server on port 8000. After all there may not be
+      // an existing SSH server
+      var client = new Client({
+        tunnel: {
+          host: '127.0.0.1',
+          port: 8080,
+          key: fs.readFileSync('./test/keys/client-key.pem'),
+          cert: fs.readFileSync('./test/keys/client-cert.pem'),
+          ca: [fs.readFileSync('./test/keys/server-cert.pem')]
+        },
+        target: {
+          host: 'localhost',
+          port: 22
+        },
+        timeout: 5000
+      });
+      client.connect(function(error, port) {
+        if (error) {
+          done(error);
+        } else {
+          // TODO: connect an SSH client to the assigned port
+          prompt.start();
+          var property = {
+            name: 'yesno',
+            message: 'You have ' + timeout + ' seconds to connect an SSH client to port ' + port + ' and confirm whether the test succeeded?',
+            validator: /y[es]*|n[o]?/,
+            warning: 'Must respond yes or no',
+            default: 'no'
+          };
+          prompt.get(property, function (err, result) {
+            var pass = result.yesno.match(/y[es]*/);
+            if (pass) {
+              done();
+            } else {
+              done(new Error('Tester reported SSH failure'));
+            }
+          });
+        }
       });
     });
   });
