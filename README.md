@@ -106,6 +106,7 @@ It should be noted that for the client to authorize server certificates they nee
 
 ## Roadmap
 
+* Client should make a simple HTTPS request to the control port to start a new tunnel and not hold a TLS connection open
 - Server should support other kinds of switchboard so that it no longer requires more than one port
 - Client should be configurable to only accept a limited number of connections
 - Server or client should be runnable from the shell
