@@ -16,6 +16,9 @@ var PORT = 8080,
     START_PORT = 8081,
     PORT_LIMIT = 3;
 
+// development work around for self signed test certs
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
+
 var SERVER_OPTIONS = {
   port: PORT,
   key: SERVER_KEY,
